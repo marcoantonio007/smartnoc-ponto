@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ponto — SmartNOC</title>
+<meta name="theme-color" content="#060a1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ponto">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="tema.css">
+<style>
+.ficha{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:12px 0 4px;padding:12px 14px;border:1px solid var(--linha);border-radius:14px;background:rgba(255,255,255,.03)}
+.ficha div small{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mudo)}
+.ficha div b{display:block;font-size:13px;font-weight:700;color:var(--txt);margin-top:1px;overflow-wrap:anywhere}
+.resumo-home{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.resumo-home div{border:1px solid var(--linha);border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.03);text-align:center}
+.resumo-home small{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mudo)}
+.resumo-home b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.resumo-home b.pos{color:#5fd6a5}.resumo-home b.neg{color:#ff9aa1}
+.intro-ab{font-size:14px;line-height:1.5;color:#c8d2ec;margin:0 0 6px}
+.selbtn{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:8px;background:var(--campo);color:var(--campo-txt);border:1px solid transparent;border-radius:14px;padding:15px 16px;font:inherit;font-size:16px;font-weight:500;text-align:left}
+.selbtn.vazio{opacity:.7}
+.selbtn:focus{outline:none;border-color:var(--azul2);box-shadow:0 0 0 3px rgba(111,147,214,.3)}
+.bloco-ab{border:1px solid var(--linha);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+.bloco-ab .tit-sec{margin-bottom:10px}
+.radios{display:flex;gap:18px;flex-wrap:wrap}
+.radios label,.chk{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#dfe5f6;text-transform:none;letter-spacing:0}
+.radios input[type=radio]{width:20px;height:20px;margin:0;padding:0;accent-color:var(--azul)}
+.chk{margin-top:14px}.chk input{margin:0!important}
+.cont-ab{font-size:11px;color:var(--mudo);margin:6px 0 0}
+.motivos-lista{margin-top:12px}
+.motivos-lista button{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--linha);color:var(--txt);font:inherit;font-size:15px;font-weight:600;padding:15px 4px;text-align:left}
+.motivos-lista button:first-child{border-top:0}
+.motivos-lista button.sel{color:#9fc0f5}
+.motivos-lista button span{color:var(--mudo);font-size:20px}
+.lnk{background:none;border:0;color:#9fc0f5;font:inherit;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer;padding:8px}
+.lnk:disabled{opacity:.5;text-decoration:none;cursor:default}
+.reqs{list-style:none;margin:14px 0 4px;padding:0;font-size:13px;font-weight:700}
+.reqs li{color:var(--mudo);padding:3px 0}
+.reqs li:before{content:'○';display:inline-block;width:20px}
+.reqs li.ok{color:#5fd6a5}.reqs li.ok:before{content:'✔'}
+.reqs li.bad{color:#ff9aa1}.reqs li.bad:before{content:'✖'}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-ant" viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="35" r="21"/>
+    <path d="M32 24V35L41 41"/>
+    <path d="M27 7H37M32 7V12" stroke-width="4"/>
+    <circle cx="32" cy="19" r="2" fill="#fff" stroke="none"/><circle cx="48" cy="35" r="2" fill="#fff" stroke="none"/>
+    <circle cx="32" cy="51" r="2" fill="#fff" stroke="none"/><circle cx="16" cy="35" r="2" fill="#fff" stroke="none"/>
+  </symbol>
+</svg>
+
+<div class="wrap ampla">
+
+  <header id="topo" class="topo hidden" data-pag="ponto" data-menu="burger"></header>
+  <script src="nav.js?v=2"></script>
+
+  <div id="aviso" class="aviso hidden"></div>
+
+  <!-- LOGIN -->
+  <section id="tela-login" class="card hidden">
+    <div class="login-logo"><svg><use href="#ic-ant"/></svg></div>
+    <div class="login-tit">SmartNOC</div>
+    <div class="login-sub">CONTROLE DE PONTO</div>
+    <div class="campos">
+      <label class="rot">Usuário<input id="login-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+      <label class="rot">Senha<input id="login-senha" type="password" autocomplete="current-password"></label>
+      <label class="chk" id="login-lembrar-lb"><input type="checkbox" id="login-lembrar"><span id="login-lembrar-tx">Lembrar meu usuário</span></label>
+      <button id="btn-entrar" class="btn">Entrar</button>
+      <button id="btn-digital" type="button" class="btn hidden" style="background:transparent;border:1px solid var(--linha);box-shadow:none">👆 Entrar com a digital</button>
+    </div>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="btn-esqueci" class="lnk">Esqueci minha senha</button></div>
+    <p style="text-align:center;margin-top:16px;font-size:12px">Use o mesmo usuário e senha da escala.</p>
+  </section>
+
+  <!-- SEM VÍNCULO / DESATIVADO -->
+  <section id="tela-semvinculo" class="card hidden">
+    <h2 id="sv-titulo">Ponto indisponível</h2>
+    <p id="sv-texto"></p>
+  </section>
+
+  <!-- CADASTRO FACIAL -->
+  <section id="tela-cadastro" class="card hidden">
+    <h2>Cadastro do rosto</h2>
+    <p>Vamos registrar seu rosto uma única vez para validar suas batidas de ponto.</p>
+    <label style="display:flex;gap:12px;align-items:flex-start;margin:18px 0;color:#c3cde6;font-size:14px;line-height:1.5">
+      <input id="consentimento" type="checkbox">
+      <span>Autorizo o uso da minha imagem facial e da minha localização no momento da batida, exclusivamente para o controle de ponto (LGPD, art. 11). As imagens ficam armazenadas pela empresa e só gestores autorizados têm acesso.</span>
+    </label>
+    <button id="btn-iniciar-cadastro" class="btn">Abrir câmera e cadastrar</button>
+  </section>
+
+  <!-- HOME -->
+  <section id="tela-home" class="hidden">
+    <div id="faixa-offline" class="aviso info hidden" style="margin-bottom:12px"></div>
+    <div class="card">
+      <div class="data" id="home-data"></div>
+      <div class="nome" id="home-nome"></div>
+      <div class="relogio" id="relogio">--:--:--</div>
+      <div id="home-regra" class="mudo"></div>
+      <button id="btn-bater" class="btn verde grande" style="margin-top:16px">Bater ponto</button>
+      <div id="home-alerta-hoje" class="alerta-hoje hidden"></div>
+    </div>
+
+    <div class="card">
+      <div class="tit-sec">Batidas de hoje</div>
+      <div id="lista-hoje"></div>
+    </div>
+
+    <button id="btn-extra-hoje" class="btn ghost hidden" style="margin-top:14px">＋ Incluir batida de hora extra</button>
+
+    <div id="bloco-alertas" class="card perigo hidden">
+      <div class="tit-sec">⚠ Corrija e justifique</div>
+      <p style="margin-bottom:12px;font-size:13px">Estes dias estão com batidas faltando ou ímpares.</p>
+      <div id="lista-alertas"></div>
+    </div>
+
+    <button id="btn-incluir" class="btn ghost" style="margin-top:14px">Solicitar abono</button>
+  </section>
+</div>
+
+<!-- MODAL CÂMERA -->
+<div id="modal-cam" class="cam hidden">
+  <div class="cam-box">
+    <div class="cam-topo"><span id="cam-titulo">Reconhecimento facial</span><button id="cam-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div class="cam-vid">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="oval" class="oval"></div>
+      <div id="cam-ok" class="cam-ok hidden">
+        <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div class="t1" id="ok-rotulo"></div>
+        <div class="t2" id="ok-hora"></div>
+      </div>
+    </div>
+    <div id="cam-prog" class="prog hidden"><i id="cam-prog-i"></i></div>
+    <div id="cam-status" class="cam-st">Iniciando câmera…</div>
+    <div id="cam-gps" class="cam-gps"></div>
+    <button id="cam-confirmar" class="btn hidden" disabled>Registrar</button>
+  </div>
+</div>
+
+<!-- MODAL ESQUECI MINHA SENHA -->
+<div id="modal-senha" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span>Recuperar senha</span><button id="rs-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="rs-p1">
+      <p class="intro-ab">Informe o seu usuário. Enviaremos um código de 6 dígitos para o e-mail cadastrado no seu ponto.</p>
+      <div class="campos"><label class="rot">Usuário<input id="rs-usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="100"></label></div>
+      <div id="rs-erro1" class="err hidden"></div>
+      <button id="rs-enviar" type="button" class="btn" style="margin-top:16px">Enviar código</button>
+    </div>
+    <div id="rs-p2" class="hidden">
+      <p class="intro-ab" id="rs-info"></p>
+      <div class="campos">
+        <label class="rot">Código recebido por e-mail<input id="rs-codigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></label>
+        <label class="rot">Nova senha<input id="rs-nova" type="password" autocomplete="new-password" maxlength="64"></label>
+        <label class="rot">Confirmar nova senha<input id="rs-conf" type="password" autocomplete="new-password" maxlength="64"></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="rs-ver"> Mostrar senha</label>
+      <ul id="rs-reqs" class="reqs">
+        <li data-r="cod">Código de 6 dígitos</li>
+        <li data-r="len">Mínimo de 8 caracteres</li>
+        <li data-r="letra">Pelo menos 1 letra</li>
+        <li data-r="num">Pelo menos 1 número</li>
+        <li data-r="esp">Pelo menos 1 caractere especial (! @ # $ % &amp; * …)</li>
+        <li data-r="sem">Sem espaços</li>
+        <li data-r="igual">As duas senhas são iguais</li>
+      </ul>
+      <div id="rs-erro2" class="err hidden"></div>
+      <button id="rs-salvar" type="button" class="btn" style="margin-top:12px" disabled>Alterar senha</button>
+      <div style="text-align:center;margin-top:6px"><button id="rs-reenviar" type="button" class="lnk" disabled>Reenviar código</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MANUAL -->
+<div id="modal-manual" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span>Lançar batida manual</span><button id="man-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div class="mudo" id="man-dia" style="font-size:14px;margin-bottom:12px"></div>
+    <div class="campos">
+      <label class="rot">Batida<select id="man-tipo"></select></label>
+      <label class="rot">Horário<input id="man-hora" type="time"></label>
+    </div>
+    <div id="man-sugestao" class="dica"></div>
+    <label class="rot" style="margin-top:16px">Justificativa (obrigatória)
+      <textarea id="man-just" rows="3" maxlength="500" placeholder="Ex.: não bateu o ponto, ou acionamento fora do horário (hora extra)"></textarea></label>
+    <div id="man-erro" class="err hidden"></div>
+    <p class="peq">A batida manual fica pendente até o gestor aprovar.</p>
+    <button id="man-enviar" class="btn">Enviar para aprovação</button>
+  </div>
+</div>
+
+<!-- MODAL SOLICITAR ABONO -->
+<div id="modal-reg" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span>Solicitar abono</span><button id="reg-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <p class="intro-ab">Use esta tela para solicitar a justificativa de uma ausência ou ajuste de jornada.</p>
+    <p class="peq" style="margin:0 0 14px">Todos os campos são obrigatórios, exceto quando indicado como opcional.</p>
+    <div class="campos">
+      <div><label class="rot" for="ab-motivo-btn">Motivo</label>
+        <button type="button" id="ab-motivo-btn" class="selbtn vazio"><span id="ab-motivo-txt">Selecione o motivo</span><span aria-hidden="true">▾</span></button></div>
+      <div class="bloco-ab">
+        <div class="tit-sec">Período do abono</div>
+        <div class="radios">
+          <label><input type="radio" name="ab-modo" value="dia" checked> Dia</label>
+          <label><input type="radio" name="ab-modo" value="periodo"> Período de dias</label>
+        </div>
+        <label class="rot" style="margin-top:12px"><span id="ab-l-data">Data</span><input id="ab-data" type="date"></label>
+        <div id="ab-c-fim"><label class="rot" style="margin-top:12px">Data final<input id="ab-fim" type="date"></label></div>
+        <label id="ab-c-comp" class="chk"><input id="ab-completo" type="checkbox"> Solicitar o abono por dia completo</label>
+        <div id="ab-c-horas">
+          <label class="rot" style="margin-top:12px">Hora inicial<input id="ab-hini" type="time"></label>
+          <label class="rot" style="margin-top:12px">Hora final<input id="ab-hfim" type="time"></label>
+        </div>
+      </div>
+      <div><label class="rot">Observação<textarea id="ab-obs" rows="4" maxlength="1000" placeholder="Exemplo: esqueci de marcar entrada"></textarea></label>
+        <div class="cont-ab"><span id="ab-cont">0</span>/1000 caracteres (máx. 1000)</div></div>
+      <div><label class="btn ghost" for="ab-arq" style="cursor:pointer;text-align:center;font-size:15px">📎 Adicionar anexo (Opcional)</label>
+        <input id="ab-arq" type="file" accept="application/pdf,image/jpeg,image/png,image/*" style="display:none">
+        <div id="ab-arq-info" class="dica"></div>
+        <p class="peq" style="text-align:center;margin:8px 0 0">Arquivos: PDF, JPG, PNG (fotos são reduzidas automaticamente; PDF até 3 MB).</p></div>
+    </div>
+    <div id="reg-erro" class="err hidden"></div>
+    <button id="reg-enviar" class="btn" style="margin-top:16px">Enviar solicitação</button>
+    <div id="reg-lista" style="margin-top:18px"></div>
+  </div>
+</div>
+
+<!-- MODAL MOTIVOS DO ABONO -->
+<div id="modal-motivos" class="modal hidden" style="z-index:60">
+  <div class="modal-box">
+    <div class="modal-topo"><button id="mot-voltar" class="x" aria-label="Voltar" style="font-size:26px">&lsaquo;</button><span style="flex:1;margin-left:6px">Selecione o motivo</span></div>
+    <input id="mot-busca" type="search" placeholder="Buscar motivo" autocomplete="off">
+    <div id="mot-lista" class="motivos-lista"></div>
+  </div>
+</div>
+
+<!-- MODAL HISTÓRICO -->
+<div id="modal-hist" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span id="hist-titulo">Histórico da folha vigente</span><button id="hist-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="hist-corpo"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MODELOS = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+  var DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  var TIPOS = ['ENTRADA', 'SAIDA_ALMOCO', 'RETORNO_ALMOCO', 'SAIDA'];
+  var ROT_FDS = { ENTRADA: 'Entrada', SAIDA: 'Saída', EXTRA_ENTRADA: 'Entrada (2º período)', EXTRA_SAIDA: 'Saída (2º período)' }; // PT_FDS_V1
+  function rotH(h, t) { return (h && h.fds && ROT_FDS[t]) || ROTULOS[t]; }
+  var ROTULOS = { ENTRADA: 'Início da atividade', SAIDA_ALMOCO: 'Saída para o almoço', RETORNO_ALMOCO: 'Retorno do almoço', SAIDA: 'Fim de expediente', EXTRA_ENTRADA: 'Início da hora extra', EXTRA_SAIDA: 'Fim da hora extra' };
+  var ATIVOS = ['valida', 'pendente', 'aprovada'];
+  function ativoDe(s, t) { return s.batidas.filter(function (b) { return b.tipo === t && ATIVOS.indexOf(b.status) >= 0; })[0]; }
+  function extraProx(s) { // próximo registro do período de hora extra (depois do fim de expediente)
+    if (!ativoDe(s, 'SAIDA')) return null;
+    if (!ativoDe(s, 'EXTRA_ENTRADA')) return 'EXTRA_ENTRADA';
+    if (!ativoDe(s, 'EXTRA_SAIDA')) return 'EXTRA_SAIDA';
+    return null;
+  }
+  var FRAMES_ESTAVEIS = 3;   // detecções seguidas (≈ 1,8 s) antes de registrar sozinho
+  var FACE_MIN = 0.22;       // largura mínima do rosto em relação ao vídeo
+  var $ = function (id) { return document.getElementById(id); };
+  var estado = { me: null, stream: null, modo: null, modelosOk: false, gps: null, timer: null, offsetMs: 0,
+                 ultimo: null, estavel: 0, enviando: false, pausado: false, concluido: false, ocupado: false, loopCam: null };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function hhmm(ts) { return ts ? ts.substring(11, 16) : ''; }
+  function dataBR(s) { var p = s.split('-'); return p[2] + '/' + p[1]; }
+  function fmtMin(m) { m = Math.abs(Math.round(m)); return Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') + 'm' : ''); }
+
+  async function api(action, body) {
+    var r, txt, j, er;
+    try {
+      r = await fetch('api_ponto.php?action=' + action, body === undefined ? { credentials: 'same-origin' } :
+        { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      txt = await r.text();
+    } catch (e) { er = new Error('Sem conexão com a internet.'); er.rede = true; throw er; }
+    try { j = JSON.parse(txt); } catch (e) { er = new Error(r.status >= 500 ? 'Servidor indisponível no momento.' : 'Resposta inválida do servidor.'); er.rede = r.status >= 500; throw er; }
+    j._status = r.status;
+    if (r.status === 401) { fecharCamera(); mostrar('tela-login'); }
+    return j;
+  }
+  function aviso(msg, tipo) {
+    var a = $('aviso'); if (!msg) { a.classList.add('hidden'); return; }
+    a.className = 'aviso ' + (tipo === 'erro' ? 'erro' : tipo === 'ok' ? 'ok' : 'info');
+    a.textContent = msg;
+    if (tipo !== 'erro') setTimeout(function () { if (a.textContent === msg) a.classList.add('hidden'); }, 6000);
+  }
+  function mostrar(tela) {
+    ['tela-login', 'tela-semvinculo', 'tela-cadastro', 'tela-home'].forEach(function (t) { $(t).classList.toggle('hidden', t !== tela); });
+    $('topo').classList.toggle('hidden', tela === 'tela-login');
+    $('btn-sair').classList.toggle('hidden', tela === 'tela-login');
+    if (tela === 'tela-login') { bioTela(); bioAuto(); }
+  }
+
+  /* ---------------- login / sessão ---------------- */
+  $('btn-entrar').onclick = async function () {
+    var b = this; b.disabled = true; aviso('');
+    try {
+      var u0 = $('login-usuario').value.trim(), s0 = $('login-senha').value;
+      var j = await api('ponto_login', { usuario: u0, senha: s0 });
+      if (!j.sucesso) return aviso(j.erro, 'erro');
+      $('login-senha').value = '';
+      ptLembrar(u0, s0);
+      await carregar();
+    } catch (e) { aviso(e.message, 'erro'); } finally { b.disabled = false; }
+  };
+  $('login-senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btn-entrar').click(); });
+  $('login-usuario').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('login-senha').focus(); });
+
+  /* ---------------- lembrar usuário / entrar com a digital (app Android) ---------------- */
+  // No app: a senha fica cifrada no cofre do Android e só é liberada pela digital. No navegador/PWA: só o usuário é lembrado.
+  var bio = { app: false, tem: false, ocupado: false, pular: false, autoFeito: false };
+  try { bio.app = typeof AndroidBridge !== 'undefined' && typeof AndroidBridge.bioDisponivel === 'function' && !!AndroidBridge.bioDisponivel(); } catch (e) {}
+  try { bio.tem = bio.app && !!AndroidBridge.bioTemCredencial(); } catch (e) {}
+  function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+  function bioTela() { // reflete o que está salvo na tela de login
+    var u = ''; try { u = bio.tem ? AndroidBridge.bioUsuario() : lsGet('pt_usuario'); } catch (e) {}
+    if (u && !$('login-usuario').value) $('login-usuario').value = u;
+    $('login-lembrar-tx').textContent = bio.app ? 'Salvar meus dados neste aparelho e entrar com a digital' : 'Lembrar meu usuário';
+    $('login-lembrar').checked = bio.app ? bio.tem : !!lsGet('pt_usuario');
+    $('btn-digital').classList.toggle('hidden', !bio.tem);
+  }
+  function ptLembrar(u, s) { // depois de um login digitado com sucesso
+    var marcado = $('login-lembrar').checked;
+    if (bio.app) {
+      try {
+        if (marcado) AndroidBridge.bioGuardar(u, s); // pede a digital para confirmar e guardar
+        else if (bio.tem) { AndroidBridge.bioEsquecer(); bio.tem = false; }
+      } catch (e) {}
+    } else lsSet('pt_usuario', marcado ? u : '');
+  }
+  function bioEntrar() {
+    if (!bio.tem || bio.ocupado) return;
+    bio.ocupado = true; aviso('');
+    try { AndroidBridge.bioEntrar(); } catch (e) { bio.ocupado = false; }
+  }
+  function bioAuto() { // ao abrir o app (sem sessão) já pede a digital; não repete depois de "Sair" nem ao voltar de outra tela
+    if (!bio.tem || bio.pular || bio.autoFeito || document.referrer) return;
+    bio.autoFeito = true; setTimeout(bioEntrar, 400);
+  }
+  window.ptBio = { // chamadas vindas do app Android
+    onGuardar: function (ok, msg) {
+      try { bio.tem = ok ? true : !!AndroidBridge.bioTemCredencial(); } catch (e) { bio.tem = !!ok; }
+      bioTela();
+      if (ok) aviso('Entrada com a digital ativada neste aparelho.', 'ok');
+      else { if (!bio.tem) $('login-lembrar').checked = false; if (msg) aviso(msg, 'erro'); }
+    },
+    onCredencial: async function (u, s) {
+      try {
+        $('login-usuario').value = u;
+        var j = await api('ponto_login', { usuario: u, senha: s });
+        if (!j.sucesso) {
+          if (j.erro === 'Credenciais inválidas.') { try { AndroidBridge.bioEsquecer(); } catch (e) {} bio.tem = false; bioTela(); aviso('A senha salva não vale mais (ela foi alterada). Digite a senha e ative a digital de novo.', 'erro'); }
+          else aviso(j.erro, 'erro');
+          return;
+        }
+        $('login-senha').value = ''; await carregar();
+      } catch (e) { aviso(e.message, 'erro'); } finally { bio.ocupado = false; }
+    },
+    onErro: function (msg, limpou) {
+      bio.ocupado = false;
+      if (limpou) { bio.tem = false; bioTela(); }
+      if (msg) aviso(msg, 'erro');
+    }
+  };
+  $('btn-digital').onclick = bioEntrar;
+  bioTela();
+
+  /* ---------------- esqueci minha senha ---------------- */
+  var rs = { usuario: '', timer: null };
+  function rsMostrar(p) { $('rs-p1').classList.toggle('hidden', p !== 1); $('rs-p2').classList.toggle('hidden', p !== 2); }
+  function rsErro(n, m) { var e = $('rs-erro' + n); e.textContent = m || ''; e.classList.toggle('hidden', !m); }
+  function rsReq() { // confere os requisitos enquanto a pessoa digita
+    var s = $('rs-nova').value, c = $('rs-conf').value, cod = $('rs-codigo').value.replace(/\D/g, '');
+    var t = {
+      cod: [cod.length === 6, cod.length > 0],
+      len: [s.length >= 8 && s.length <= 64, s.length > 0],
+      letra: [/\p{L}/u.test(s), s.length > 0],
+      num: [/\p{Nd}/u.test(s), s.length > 0],
+      esp: [/[^\p{L}\p{N}\s]/u.test(s), s.length > 0],
+      sem: [s.length > 0 && !/\s/.test(s), s.length > 0],
+      igual: [s !== '' && s === c, c.length > 0]
+    }, todos = true;
+    Array.prototype.forEach.call(document.querySelectorAll('#rs-reqs li'), function (li) {
+      var x = t[li.getAttribute('data-r')];
+      li.className = !x[1] ? '' : x[0] ? 'ok' : 'bad';
+      if (!x[0]) todos = false;
+    });
+    $('rs-salvar').disabled = !todos;
+  }
+  function rsCooldown(n) {
+    clearTimeout(rs.timer); var b = $('rs-reenviar'); b.disabled = true;
+    (function t() { if (n <= 0) { b.disabled = false; b.textContent = 'Reenviar código'; return; } b.textContent = 'Reenviar código (' + n + 's)'; n--; rs.timer = setTimeout(t, 1000); })();
+  }
+  async function rsEnviar() {
+    var u = $('rs-usuario').value.trim(); rsErro(1, '');
+    if (!u) return rsErro(1, 'Informe o usuário.');
+    var b = $('rs-enviar'); b.disabled = true;
+    try {
+      var j = await api('ponto_senha_solicitar', { usuario: u });
+      if (!j.sucesso) return rsErro(1, j.erro);
+      rs.usuario = u; $('rs-info').textContent = j.mensagem; rsErro(2, '');
+      $('rs-codigo').value = $('rs-nova').value = $('rs-conf').value = ''; $('rs-ver').checked = false; $('rs-nova').type = $('rs-conf').type = 'password';
+      rsMostrar(2); rsCooldown(60); rsReq(); $('rs-codigo').focus();
+    } catch (e) { rsErro(1, e.message); } finally { b.disabled = false; }
+  }
+  async function rsReenviar() {
+    rsErro(2, ''); var b = $('rs-reenviar'); b.disabled = true;
+    try {
+      var j = await api('ponto_senha_solicitar', { usuario: rs.usuario });
+      if (!j.sucesso) { b.disabled = false; return rsErro(2, j.erro); }
+      $('rs-info').textContent = 'Enviamos um novo código. O anterior deixou de valer.'; rsCooldown(60);
+    } catch (e) { b.disabled = false; rsErro(2, e.message); }
+  }
+  async function rsSalvar() {
+    rsErro(2, ''); var b = $('rs-salvar'); b.disabled = true;
+    try {
+      var j = await api('ponto_senha_redefinir', { usuario: rs.usuario, codigo: $('rs-codigo').value.replace(/\D/g, ''), senha: $('rs-nova').value });
+      if (!j.sucesso) return rsErro(2, j.erro);
+      clearTimeout(rs.timer); $('modal-senha').classList.add('hidden');
+      $('rs-codigo').value = $('rs-nova').value = $('rs-conf').value = '';
+      $('login-usuario').value = rs.usuario; $('login-senha').value = '';
+      aviso('Senha alterada com sucesso. Entre com a nova senha.', 'ok'); $('login-senha').focus();
+    } catch (e) { rsErro(2, e.message); } finally { rsReq(); }
+  }
+  $('btn-esqueci').onclick = function () {
+    var u = $('login-usuario').value.trim();
+    $('rs-usuario').value = u; rsErro(1, ''); rsMostrar(1); $('modal-senha').classList.remove('hidden');
+    if (u) rsEnviar(); else $('rs-usuario').focus(); // sem usuário digitado: pede o usuário antes de enviar o código
+  };
+  $('rs-enviar').onclick = rsEnviar; $('rs-reenviar').onclick = rsReenviar; $('rs-salvar').onclick = rsSalvar;
+  $('rs-fechar').onclick = function () { clearTimeout(rs.timer); $('modal-senha').classList.add('hidden'); };
+  $('rs-usuario').addEventListener('keydown', function (e) { if (e.key === 'Enter') rsEnviar(); });
+  $('rs-codigo').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); rsReq(); });
+  $('rs-nova').addEventListener('input', rsReq); $('rs-conf').addEventListener('input', rsReq);
+  $('rs-conf').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !$('rs-salvar').disabled) rsSalvar(); });
+  $('rs-ver').onchange = function () { $('rs-nova').type = $('rs-conf').type = this.checked ? 'text' : 'password'; };
+  $('btn-sair').onclick = async function () { bio.pular = true; try { await api('ponto_logout', {}); } catch (e) {} try { localStorage.removeItem('pt_me'); } catch (e) {} estado.me = null; clearInterval(estado.timer); if (window.ptNav) ptNav.limpar(); mostrar('tela-login'); };
+
+  async function carregar() {
+    var j, off = false;
+    try { j = await api('ponto_me'); }
+    catch (e) {
+      if (!e.rede) throw e;
+      j = lerCacheMe(); // sem internet: usa os últimos dados conhecidos
+      if (!j) { aviso('Sem conexão com a internet. Conecte-se uma vez para carregar seus dados.', 'erro'); return mostrar('tela-login'); }
+      off = true;
+    }
+    estado.offline = off;
+    if (!j.sucesso) { if (j.erro && !/Sessão/.test(j.erro)) aviso(j.erro, 'erro'); return mostrar('tela-login'); }
+    estado.me = j;
+    if (window.ptNav) ptNav.aplicar(j);
+    if (!j.vinculado) {
+      $('sv-titulo').textContent = 'Usuário sem cadastro de colaborador';
+      $('sv-texto').textContent = 'Seu login (' + j.usuario + ') não está vinculado a nenhum colaborador da escala, então não é possível bater ponto.' + (j.gestor ? ' Você pode acessar a Administração no link acima.' : ' Fale com o gestor.');
+      return mostrar('tela-semvinculo');
+    }
+    if (j.desativado) {
+      $('sv-titulo').textContent = 'Ponto desativado';
+      $('sv-texto').textContent = 'Seu acesso ao ponto está desativado. Fale com o gestor.';
+      return mostrar('tela-semvinculo');
+    }
+    if (off) estado.offsetMs = j._offsetMs || 0;
+    else { estado.offsetMs = new Date(j.agora.replace(' ', 'T')).getTime() - Date.now(); j._offsetMs = estado.offsetMs; gravarCacheMe(j); }
+    if (!j.cadastrado) return mostrar('tela-cadastro');
+    renderHome(); mostrar('tela-home');
+    if (!off) {
+      if (filaDoUsuario().length) setTimeout(sincronizar, 300);
+      setTimeout(function () { if (!estado.modelosOk && !estado.modo && window.faceapi && navigator.onLine !== false) carregarModelos().catch(function () {}); }, 4000); // deixa o reconhecimento facial pronto para uso sem internet
+    }
+  }
+
+  /* ---------------- sem internet: cache dos dados + fila de batidas ---------------- */
+  function lerCacheMe() { try { return JSON.parse(localStorage.getItem('pt_me') || 'null'); } catch (e) { return null; } }
+  function gravarCacheMe(j) { try { localStorage.setItem('pt_me', JSON.stringify(j)); } catch (e) {} }
+  function filaLer() { try { return JSON.parse(localStorage.getItem('pt_fila') || '[]') || []; } catch (e) { return []; } }
+  function filaGravar(f) { try { localStorage.setItem('pt_fila', JSON.stringify(f)); return true; } catch (e) { return false; } }
+  function rejLer() { try { return JSON.parse(localStorage.getItem('pt_rej') || '[]') || []; } catch (e) { return []; } }
+  function rejGravar(r) { try { localStorage.setItem('pt_rej', JSON.stringify(r)); } catch (e) {} }
+  function filaDoUsuario() { var n = estado.me && estado.me.nome; return filaLer().filter(function (i) { return i.nome === n; }).sort(function (a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0; }); }
+  function novoUid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 10);
+  }
+  function fmtTs(d) {
+    function z(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds());
+  }
+  function hojeLocal() { // "hoje" do servidor + batidas guardadas no aparelho que ainda não foram enviadas
+    var h0 = estado.me.hoje, agora = agoraServidor(), data = fmtTs(agora).substring(0, 10), h;
+    if (h0.data !== data) h = { data: data, dow: agora.getDay(), tem_regra: h0.tem_regra, sem_obrigacao: false, batidas: [], alerta: null, trabalhado_min: null, saldo_min: null };
+    else h = JSON.parse(JSON.stringify(h0));
+    var fila = filaDoUsuario().filter(function (i) { return i.ts.substring(0, 10) === h.data; });
+    fila.forEach(function (i) { h.batidas.push({ tipo: i.tipo, momento: i.ts, origem: 'facial', status: 'valida', offline: true, aguardando: true }); });
+    if (fila.length) { h.alerta = null; h.trabalhado_min = null; h.saldo_min = null; }
+    h.proximo = null;
+    h.fds = (!h.tem_regra || h.sem_obrigacao) && !ativoDe(h, 'SAIDA_ALMOCO') && !ativoDe(h, 'RETORNO_ALMOCO');
+    var seqH = h.fds ? ['ENTRADA', 'SAIDA', 'EXTRA_ENTRADA', 'EXTRA_SAIDA'] : TIPOS;
+    for (var k = 0; k < seqH.length; k++) if (!ativoDe(h, seqH[k])) { h.proximo = seqH[k]; break; }
+    if (!h.fds && h.proximo === 'SAIDA_ALMOCO' && estado.me && estado.me.almoco_auto) { var en = ativoDe(h, 'ENTRADA'); if (en && agoraServidor().getTime() - new Date(en.momento.replace(' ', 'T')).getTime() >= 6 * 3600000) h.proximo = 'SAIDA'; }
+    return h;
+  }
+  function faixa() {
+    var f = $('faixa-offline'), p = filaDoUsuario().length, nome = estado.me && estado.me.nome;
+    var rej = rejLer().filter(function (r) { return r.nome === nome; }), html = '';
+    if (estado.offline) html += '<div>📴 Sem internet — as batidas ficam salvas neste aparelho e são enviadas quando a conexão voltar.</div>';
+    if (p) html += '<div>⏳ ' + p + (p > 1 ? ' batidas aguardando envio' : ' batida aguardando envio') + '.</div>';
+    rej.forEach(function (r) { html += '<div style="color:#ffb4b4">⚠ A batida das ' + esc(r.hora) + ' (' + esc(r.rotulo) + ') não foi aceita: ' + esc(r.motivo) + ' Lance-a manualmente, com justificativa.</div>'; });
+    if (rej.length) html += '<button type="button" class="link" id="faixa-ok" style="color:#9fc0f5">Entendi</button>';
+    f.innerHTML = html; f.classList.toggle('hidden', !html);
+    var ok = $('faixa-ok'); if (ok) ok.onclick = function () { rejGravar(rejLer().filter(function (r) { return r.nome !== nome; })); faixa(); };
+  }
+  function guardarOffline(d) {
+    var h = hojeLocal(), tipo = d.extra ? extraProx(h) : h.proximo;
+    if (!tipo) throw new Error(d.extra ? 'O início e o fim da hora extra de hoje já foram registrados.' : 'As quatro batidas de hoje já foram registradas.');
+    var ag = agoraServidor(), ts = fmtTs(ag);
+    var ult = h.batidas.filter(function (b) { return ATIVOS.indexOf(b.status) >= 0; }).map(function (b) { return b.momento; }).sort().pop();
+    if (ult && ag.getTime() - new Date(ult.replace(' ', 'T')).getTime() < 60000) throw new Error('Aguarde 1 minuto entre as batidas.');
+    var f = filaLer();
+    f.push({ uid: d.uid, nome: estado.me.nome, tipo: tipo, ts: ts, descritor: d.descritor, foto: d.foto, lat: d.lat, lng: d.lng, precisao: d.precisao, extra: !!d.extra });
+    if (!filaGravar(f)) throw new Error('Sem espaço para guardar a batida neste aparelho.');
+    return { sucesso: true, offline: true, rotulo: rotH(h, tipo), hora: ts.substring(11) };
+  }
+  async function sincronizar() {
+    if (estado.sync || !estado.me || estado.offline) return;
+    var fila = filaDoUsuario(); if (!fila.length) return;
+    estado.sync = true; var enviadas = 0, recusadas = 0;
+    try {
+      for (var k = 0; k < fila.length; k++) {
+        var i = fila[k], j;
+        try { j = await api('ponto_bater', { descritor: i.descritor, foto: i.foto, lat: i.lat, lng: i.lng, precisao: i.precisao, extra: i.extra, uid: i.uid, offline: true, ts: i.ts }); }
+        catch (e) { break; } // sem rede ou servidor fora do ar: tenta de novo mais tarde
+        if (j._status === 401 || /bloqueado/i.test(j.erro || '')) break;
+        var resto = filaLer().filter(function (x) { return x.uid !== i.uid; });
+        if (j.sucesso) { filaGravar(resto); enviadas++; continue; }
+        filaGravar(resto); recusadas++;
+        var r = rejLer(); r.push({ nome: i.nome, hora: i.ts.substring(11, 16), rotulo: ROTULOS[i.tipo] || i.tipo, motivo: j.erro || 'erro desconhecido.' }); rejGravar(r);
+      }
+    } finally { estado.sync = false; }
+    if (enviadas || recusadas) {
+      if (enviadas) aviso('✔ ' + enviadas + (enviadas > 1 ? ' batidas enviadas' : ' batida enviada') + ' ao servidor.', 'ok');
+      await carregar();
+    }
+  }
+  window.addEventListener('online', function () { setTimeout(function () { if (estado.me && !estado.modo) carregar().catch(function () {}); }, 1500); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && estado.me && !estado.modo && navigator.onLine !== false) carregar().catch(function () {}); });
+  setInterval(function () {
+    if (!estado.me || estado.modo) return;
+    if (estado.offline || filaDoUsuario().length) carregar().catch(function () {});
+  }, 30000);
+
+  /* ---------------- home ---------------- */
+  function agoraServidor() { return new Date(Date.now() + estado.offsetMs); }
+  function tickRelogio() {
+    var d = agoraServidor();
+    $('relogio').textContent = [d.getHours(), d.getMinutes(), d.getSeconds()].map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+  }
+  function selo(b) {
+    var o = b.origem === 'sistema' ? 'automático' : b.origem === 'manual' ? 'manual' : 'facial', cls = 'selo';
+    if (b.status === 'pendente' || b.aguardando) cls += ' pend'; else if (b.status === 'aprovada') cls += ' apr';
+    return '<span class="' + cls + '">' + o + (b.aguardando ? ' · aguardando envio' : b.offline ? ' · offline' : '') + (b.status === 'pendente' ? ' · pendente' : b.status === 'aprovada' ? ' · aprovada' : '') + (b.remocao_status === 'pendente' ? ' · remoção pendente' : '') + '</span>';
+  }
+  function renderHome() {
+    var j = estado.me, h = hojeLocal(); faixa();
+    $('home-data').textContent = DIAS[h.dow] + ', ' + dataBR(h.data) + '/' + h.data.substring(0, 4);
+    $('home-nome').textContent = j.nome;
+    clearInterval(estado.timer); tickRelogio(); estado.timer = setInterval(tickRelogio, 1000);
+    var abA = (h.abonos || []).filter(function (a) { return a.status === 'aprovada'; });
+    $('home-regra').textContent = abA.length ? 'Hoje: ' + abA.map(function (a) { return (a.tipo === 'dia' ? 'dia abonado' : 'abono de ' + a.hora_ini + ' às ' + a.hora_fim) + ' (' + a.motivo + ')'; }).join('; ') + '.' : h.tem_regra ? (h.sem_obrigacao ? 'Hoje não há expediente obrigatório (feriado/ausência).' : 'Tolerância: ' + j.tolerancia + ' min' + (j.flex_min ? ' · Flexibilidade de entrada: ±' + (j.flex_min % 60 ? j.flex_min + ' min' : (j.flex_min / 60) + ' h') : '')) : 'Hoje não há expediente na regra de horário.';
+    var btn = $('btn-bater');
+    if (h.proximo) { btn.disabled = false; btn.textContent = '📷 Bater ponto — ' + rotH(h, h.proximo); }
+    else { btn.disabled = true; btn.textContent = '✔ Dia completo'; }
+    $('btn-extra-hoje').classList.toggle('hidden', !(!h.fds && extraProx(h)));
+    var ah = $('home-alerta-hoje');
+    if (h.alerta) { ah.classList.remove('hidden'); ah.innerHTML = esc(h.alerta) + ' <button data-corrigir="' + h.data + '">Lançar manualmente</button>'; }
+    else ah.classList.add('hidden');
+
+    var linhas = (h.fds ? ['ENTRADA', 'SAIDA'] : TIPOS).concat(['EXTRA_ENTRADA', 'EXTRA_SAIDA'].filter(function (t) { return h.batidas.some(function (b) { return b.tipo === t; }); })).map(function (t) {
+      var ativa = h.batidas.filter(function (b) { return b.tipo === t && ['valida', 'pendente', 'aprovada'].indexOf(b.status) >= 0; })[0];
+      var rec = h.batidas.filter(function (b) { return b.tipo === t && b.status === 'recusada'; });
+      var info = ativa ? '<span class="h">' + hhmm(ativa.momento) + '</span>' + selo(ativa) : '<span class="vazio">—</span>';
+      return '<div class="lin"><span class="r">' + rotH(h, t) + '</span><span>' + info + '</span></div>' +
+        rec.map(function (b) { return '<div class="rec">Recusada (' + hhmm(b.momento) + '): ' + esc(b.motivo_decisao || '') + '</div>'; }).join('');
+    }).join('');
+    if (h.trabalhado_min != null) linhas += '<div class="total">Trabalhado: ' + fmtMin(h.trabalhado_min) + (h.saldo_min ? ' · saldo ' + (h.saldo_min > 0 ? '+' : '−') + fmtMin(h.saldo_min) : '') + '</div>';
+    $('lista-hoje').innerHTML = linhas;
+
+    var al = j.alertas.filter(function (a) { return a.data !== h.data; });
+    $('bloco-alertas').classList.toggle('hidden', !al.length);
+    $('lista-alertas').innerHTML = al.map(function (a) {
+      return '<div class="item-alerta"><b>' + DIAS[a.dow] + ', ' + dataBR(a.data) + '</b><div class="d">' + esc(a.alerta) + '</div>' +
+        '<button class="link" style="color:#9fc0f5" data-corrigir="' + a.data + '">Corrigir e justificar</button></div>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-corrigir]'), function (b) {
+      b.onclick = function () { abrirManual(b.getAttribute('data-corrigir')); };
+    });
+  }
+
+  /* ---------------- câmera + reconhecimento ---------------- */
+  async function carregarModelos() {
+    if (estado.modelosOk) return;
+    if (!window.faceapi) throw new Error('Não foi possível carregar o reconhecimento facial. Verifique a internet e recarregue a página.');
+    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODELOS), faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODELOS), faceapi.nets.faceRecognitionNet.loadFromUri(MODELOS)]);
+    estado.modelosOk = true;
+  }
+  function pegarLocalizacao() {
+    return new Promise(function (resolve, reject) {
+      if (!navigator.geolocation) return reject(new Error('Este aparelho não oferece localização.'));
+      navigator.geolocation.getCurrentPosition(function (p) {
+        resolve({ lat: p.coords.latitude, lng: p.coords.longitude, precisao: p.coords.accuracy });
+      }, function (e) {
+        reject(new Error(e.code === 1 ? 'Localização bloqueada. Permita o acesso à localização nas configurações do navegador.' : 'Não foi possível obter a localização. Vá para um local aberto e tente de novo.'));
+      }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    });
+  }
+  async function detectar() {
+    return await faceapi.detectAllFaces($('video'), new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceLandmarks(true).withFaceDescriptors();
+  }
+  function fotoDoVideo() {
+    var v = $('video'), c = document.createElement('canvas'), w = 320, h = Math.round(w * v.videoHeight / v.videoWidth);
+    c.width = w; c.height = h; c.getContext('2d').drawImage(v, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', 0.7);
+  }
+  function setStatus(msg, cls) { var s = $('cam-status'); s.textContent = msg; s.className = 'cam-st ' + (cls || ''); }
+  function setOval(cls) { $('oval').className = 'oval ' + (cls || ''); }
+  function setProg(n) {
+    var p = $('cam-prog'); p.classList.toggle('hidden', !n);
+    $('cam-prog-i').style.width = Math.min(100, Math.round(n / FRAMES_ESTAVEIS * 100)) + '%';
+  }
+  function fecharCamera() {
+    if (estado.stream) { estado.stream.getTracks().forEach(function (t) { t.stop(); }); estado.stream = null; }
+    clearInterval(estado.loopCam); estado.loopCam = null;
+    $('modal-cam').classList.add('hidden'); $('cam-ok').classList.add('hidden'); estado.modo = null;
+  }
+  $('cam-fechar').onclick = fecharCamera;
+
+  function mostrarBotao(txt, habilitado) { var b = $('cam-confirmar'); b.textContent = txt; b.disabled = !habilitado; b.classList.remove('hidden'); }
+  function esconderBotao() { $('cam-confirmar').classList.add('hidden'); }
+
+  async function abrirCamera(modo) {
+    estado.modo = modo; estado.gps = null; estado.ultimo = null; estado.estavel = 0; estado.enviando = false; estado.pausado = false; estado.concluido = false; estado.uid = novoUid();
+    estado.extra = modo === 'extra'; if (estado.extra) modo = 'bater'; estado.modo = modo;
+    $('cam-titulo').textContent = modo === 'cadastro' ? 'Cadastro do rosto' : 'Bater ponto — ' + rotH(hojeLocal(), estado.extra ? extraProx(hojeLocal()) : hojeLocal().proximo);
+    if (modo === 'cadastro') mostrarBotao('Cadastrar meu rosto', false); else esconderBotao();
+    setProg(0); setOval(''); $('cam-ok').classList.add('hidden');
+    $('cam-gps').textContent = '📍 Obtendo localização…';
+    $('modal-cam').classList.remove('hidden'); setStatus('Iniciando câmera…');
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Câmera indisponível. Abra esta página em HTTPS no navegador do celular.');
+      estado.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      $('video').srcObject = estado.stream; await $('video').play().catch(function () {});
+      setStatus('Carregando reconhecimento facial…');
+      await carregarModelos();
+      var gpsP = pegarLocalizacao().then(function (g) { estado.gps = g; $('cam-gps').textContent = '📍 Localização obtida (precisão ~' + Math.round(g.precisao) + ' m)'; })
+        .catch(function (e) { $('cam-gps').textContent = '⚠ ' + e.message; });
+      estado.loopCam = setInterval(ciclo, 600);
+      await gpsP;
+    } catch (e) { setStatus(e.message, 'erro'); }
+  }
+
+  async function ciclo() {
+    if (!estado.modo || estado.ocupado || estado.concluido) return;
+    estado.ocupado = true;
+    try {
+      var d = await detectar();
+      if (!estado.modo || estado.concluido) return;
+      var cad = estado.modo === 'cadastro';
+      if (d.length === 0) { estado.ultimo = null; estado.estavel = 0; setProg(0); setOval(''); if (!estado.pausado) setStatus('Procurando rosto… centralize o rosto no círculo.'); if (cad) $('cam-confirmar').disabled = true; return; }
+      if (d.length > 1) { estado.ultimo = null; estado.estavel = 0; setProg(0); setOval('erro'); if (!estado.pausado) setStatus('Mais de um rosto na imagem. Fique sozinho(a) na câmera.', 'erro'); if (cad) $('cam-confirmar').disabled = true; return; }
+      var f = d[0], box = f.detection && f.detection.box, v = $('video');
+      var rel = (box && v.videoWidth) ? box.width / v.videoWidth : 1;
+      estado.ultimo = f;
+      if (rel < FACE_MIN) { estado.estavel = 0; setProg(0); setOval('alerta'); if (!estado.pausado) setStatus('Aproxime o rosto da câmera.'); if (cad) $('cam-confirmar').disabled = true; return; }
+      if (!estado.gps) { estado.estavel = 0; setOval('alerta'); if (!estado.pausado) setStatus('Rosto detectado. Aguardando localização…'); if (cad) $('cam-confirmar').disabled = true; return; }
+      if (cad) { setOval('ok'); setStatus('✔ Rosto detectado. Pode cadastrar.', 'ok'); $('cam-confirmar').disabled = false; return; }
+      if (estado.pausado || estado.enviando) return;
+      estado.estavel++; setOval('ok'); setProg(estado.estavel);
+      if (estado.estavel >= FRAMES_ESTAVEIS) { await registrarBatida(); }
+      else setStatus('Rosto detectado — mantenha parado… ' + estado.estavel + '/' + FRAMES_ESTAVEIS, 'ok');
+    } catch (e) { setStatus('Erro na leitura do rosto: ' + e.message, 'erro'); }
+    finally { estado.ocupado = false; }
+  }
+
+  async function registrarBatida() {
+    if (estado.enviando || !estado.ultimo || !estado.gps) return;
+    estado.enviando = true; setStatus('Rosto detectado. Registrando…', 'ok');
+    try {
+      var dados = { descritor: Array.from(estado.ultimo.descriptor), foto: fotoDoVideo(), lat: estado.gps.lat, lng: estado.gps.lng, precisao: estado.gps.precisao, extra: !!estado.extra, uid: estado.uid }, j;
+      try { j = await api('ponto_bater', dados); }
+      catch (e) { if (!e.rede) throw e; j = guardarOffline(dados); } // sem internet: a batida fica gravada no aparelho
+      if (!j.sucesso) throw new Error(j.erro);
+      estado.concluido = true; clearInterval(estado.loopCam); setProg(0);
+      $('ok-rotulo').textContent = j.rotulo; $('ok-hora').textContent = j.hora.substring(0, 5);
+      $('cam-ok').classList.remove('hidden'); setStatus(j.offline ? '✔ Ponto salvo no aparelho!' : '✔ Ponto registrado!', 'ok');
+      if (navigator.vibrate) try { navigator.vibrate([90, 40, 90]); } catch (e) {}
+      setTimeout(async function () { fecharCamera(); aviso(j.offline ? '📴 ' + j.rotulo + ' salvo no aparelho às ' + j.hora.substring(0, 5) + '. Será enviado quando houver internet.' : '✔ ' + j.rotulo + ' registrado às ' + j.hora.substring(0, 5) + '.', 'ok'); await carregar(); }, 2000);
+    } catch (e) {
+      estado.pausado = true; estado.estavel = 0; setProg(0); setOval('erro');
+      setStatus(e.message, 'erro'); mostrarBotao('Tentar novamente', true);
+    } finally { estado.enviando = false; }
+  }
+
+  $('btn-iniciar-cadastro').onclick = function () {
+    if (!$('consentimento').checked) return aviso('Marque a autorização para continuar.', 'erro');
+    abrirCamera('cadastro');
+  };
+  $('btn-bater').onclick = function () { aviso(''); abrirCamera('bater'); };
+  $('btn-extra-hoje').onclick = function () { aviso(''); abrirCamera('extra'); };
+
+  $('cam-confirmar').onclick = async function () {
+    var b = this; b.disabled = true;
+    if (estado.modo === 'bater') { // "Tentar novamente" depois de uma falha
+      estado.pausado = false; estado.estavel = 0; esconderBotao(); setOval(''); setStatus('Procurando rosto…'); return;
+    }
+    try {
+      setStatus('Mantenha o rosto parado… capturando (0/3)');
+      var amostras = [];
+      for (var i = 0; i < 3; i++) {
+        await new Promise(function (r) { setTimeout(r, 700); });
+        var d = await detectar();
+        if (d.length !== 1) throw new Error('Rosto perdido durante a captura. Tente novamente.');
+        amostras.push(Array.from(d[0].descriptor)); setStatus('Capturando (' + (i + 1) + '/3)');
+      }
+      for (var x = 1; x < amostras.length; x++) { if (dist(amostras[0], amostras[x]) > 0.45) throw new Error('As leituras ficaram diferentes. Fique parado(a), com boa luz, e tente de novo.'); }
+      var media = amostras[0].map(function (_, k) { return (amostras[0][k] + amostras[1][k] + amostras[2][k]) / 3; });
+      var foto = fotoDoVideo();
+      var j = await api('ponto_cadastrar_rosto', { descritor: media, foto: foto, consentimento: true });
+      if (!j.sucesso) throw new Error(j.erro);
+      fecharCamera(); aviso('Rosto cadastrado! Agora você já pode bater o ponto.', 'ok'); await carregar();
+    } catch (e) { setStatus(e.message, 'erro'); b.disabled = false; }
+  };
+  function dist(a, b) { var s = 0; for (var i = 0; i < a.length; i++) { var d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); }
+
+  /* ---------------- batida manual ---------------- */
+  var diaManual = null;
+  async function abrirManual(data) {
+    var s = (estado.me.hoje.data === data) ? estado.me.hoje : estado.me.alertas.filter(function (a) { return a.data === data; })[0];
+    if (!s) return;
+    diaManual = s;
+    $('man-dia').textContent = DIAS[s.dow] + ', ' + dataBR(s.data) + '/' + s.data.substring(0, 4);
+    var opts = s.faltam.slice(), xp = extraProx(s); if (xp) opts.push(xp);
+    $('man-tipo').innerHTML = opts.length ? opts.map(function (t) { return '<option value="' + t + '">' + ROTULOS[t] + '</option>'; }).join('') : '<option value="">Nenhuma batida faltando</option>';
+    $('man-just').value = ''; $('man-erro').classList.add('hidden');
+    atualizarSugestao();
+    $('modal-manual').classList.remove('hidden');
+  }
+  function atualizarSugestao() {
+    var t = $('man-tipo').value, sug = diaManual && diaManual.sugestoes[t];
+    var agora = new Date(), hhmmAgora = ('0' + agora.getHours()).slice(-2) + ':' + ('0' + agora.getMinutes()).slice(-2);
+    $('man-hora').value = sug || ((t || '').indexOf('EXTRA') === 0 && diaManual && diaManual.data === estado.me.hoje.data ? hhmmAgora : '');
+    $('man-sugestao').textContent = sug ? 'Sugestão pela regra de horário: ' + sug + ' (você pode ajustar)' : '';
+  }
+  $('man-tipo').onchange = atualizarSugestao;
+  $('man-fechar').onclick = function () { $('modal-manual').classList.add('hidden'); };
+  $('man-enviar').onclick = async function () {
+    var b = this; b.disabled = true; var er = $('man-erro'); er.classList.add('hidden');
+    try {
+      var j = await api('ponto_manual', { data: diaManual.data, tipo: $('man-tipo').value, hora: $('man-hora').value, justificativa: $('man-just').value });
+      if (!j.sucesso) { er.textContent = j.erro; er.classList.remove('hidden'); return; }
+      $('modal-manual').classList.add('hidden'); aviso('Batida enviada para aprovação do gestor.', 'ok'); await carregar();
+    } catch (e) { er.textContent = e.message; er.classList.remove('hidden'); } finally { b.disabled = false; }
+  };
+
+  /* ---------------- solicitar abono ---------------- */
+  var MOTIVOS = ['Licença Casamento', 'Feriado', 'Atestado Médico', 'Atestado de Óbito', 'Declaração Médica (Comparecimento)', 'Integração Treinamento Ponto', 'Folga TRE',
+    'Licença Alistamento Militar', 'Exame Vestibular', 'Licença Paternidade', 'Espro/ Ciee (Aprendiz)', 'Abonado pelo Gestor', 'Folga de Campo', 'Troca de escala', 'Day Off Aniversário'];
+  var regArq = null, regMotivo = ''; // regArq: { dataUrl, nome }
+  function hojeISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function abModo() { return document.querySelector('input[name="ab-modo"]:checked').value; }
+  function regAjusta() {
+    var per = abModo() === 'periodo';
+    $('ab-l-data').textContent = per ? 'Data inicial' : 'Data';
+    $('ab-c-fim').classList.toggle('hidden', !per); $('ab-c-comp').classList.toggle('hidden', per);
+    $('ab-c-horas').classList.toggle('hidden', per || $('ab-completo').checked);
+    $('reg-erro').classList.add('hidden');
+  }
+  function motivosLista() {
+    var q = $('mot-busca').value.trim().toLowerCase();
+    $('mot-lista').innerHTML = MOTIVOS.filter(function (m) { return m.toLowerCase().indexOf(q) >= 0; }).map(function (m) {
+      return '<button type="button" data-m="' + esc(m) + '"' + (m === regMotivo ? ' class="sel"' : '') + '>' + esc(m) + '<span aria-hidden="true">›</span></button>';
+    }).join('') || '<p class="peq">Nenhum motivo encontrado.</p>';
+    Array.prototype.forEach.call($('mot-lista').querySelectorAll('button'), function (b) {
+      b.onclick = function () {
+        regMotivo = b.getAttribute('data-m'); $('ab-motivo-txt').textContent = regMotivo; $('ab-motivo-btn').classList.remove('vazio');
+        $('modal-motivos').classList.add('hidden'); $('reg-erro').classList.add('hidden');
+      };
+    });
+  }
+  function lerArquivo(f) { // imagens são reduzidas (lado maior 1600 px, JPEG) para o envio ser leve; PDF segue como está (até 3 MB)
+    return new Promise(function (ok, no) {
+      if (!f) return ok(null);
+      if (f.type === 'application/pdf') {
+        if (f.size > 3 * 1024 * 1024) return no(new Error('O PDF é grande demais (máximo de 3 MB).'));
+        var r = new FileReader(); r.onload = function () { ok({ dataUrl: r.result, nome: f.name }); }; r.onerror = function () { no(new Error('Não foi possível ler o arquivo.')); }; return r.readAsDataURL(f);
+      }
+      if (!/^image\//.test(f.type)) return no(new Error('Anexe um PDF ou uma foto (JPG/PNG).'));
+      var url = URL.createObjectURL(f), im = new Image();
+      im.onload = function () {
+        var m = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * m); c.height = Math.round(im.height * m);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        ok({ dataUrl: c.toDataURL('image/jpeg', 0.82), nome: f.name.replace(/\.[^.]+$/, '') + '.jpg' });
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); no(new Error('Não foi possível abrir a imagem.')); }; im.src = url;
+    });
+  }
+  async function regLista() {
+    try {
+      var j = await api('ponto_atestado_listar'); if (!j.sucesso || !j.itens.length) { $('reg-lista').innerHTML = ''; return; }
+      var ST = { pendente: 'pendente', aprovada: 'aprovado', recusada: 'recusado', cancelada: 'cancelado' };
+      $('reg-lista').innerHTML = '<div class="tit-sec">Minhas solicitações de abono</div>' + j.itens.map(function (a) {
+        var quando = a.tipo === 'dia' ? (a.data_ini === a.data_fim ? dataBR(a.data_ini) : dataBR(a.data_ini) + ' a ' + dataBR(a.data_fim)) : dataBR(a.data_ini) + ' · ' + a.hora_ini + '–' + a.hora_fim;
+        return '<div class="lin"><span class="r">' + esc(a.rotulo) + '<br><small style="color:var(--mudo)">' + esc(quando) + (a.status === 'recusada' && a.motivo_decisao ? ' · ' + esc(a.motivo_decisao) : '') + (a.tem_anexo ? ' · <a href="api_ponto.php?action=ponto_atestado_arquivo&id=' + a.id + '" target="_blank" rel="noopener" style="color:#9fc0f5">📎 Ver anexo</a>' : '') + '</small></span>' +
+          '<span><span class="selo ' + (a.status === 'pendente' ? 'pend' : a.status === 'aprovada' ? 'apr' : '') + '">' + ST[a.status] + '</span></span></div>';
+      }).join('');
+    } catch (e) {}
+  }
+  $('btn-incluir').onclick = function () {
+    aviso(''); regArq = null; regMotivo = ''; $('ab-motivo-txt').textContent = 'Selecione o motivo'; $('ab-motivo-btn').classList.add('vazio');
+    $('ab-arq').value = ''; $('ab-arq-info').textContent = ''; $('ab-obs').value = ''; $('ab-cont').textContent = '0'; $('ab-hini').value = ''; $('ab-hfim').value = '';
+    $('ab-completo').checked = false; document.querySelector('input[name="ab-modo"][value="dia"]').checked = true;
+    $('ab-data').value = hojeISO(); $('ab-fim').value = hojeISO(); regAjusta(); $('modal-reg').classList.remove('hidden'); regLista();
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="ab-modo"]'), function (r) { r.onchange = regAjusta; });
+  $('ab-completo').onchange = regAjusta;
+  $('ab-obs').oninput = function () { $('ab-cont').textContent = this.value.length; };
+  $('ab-motivo-btn').onclick = function () { $('mot-busca').value = ''; motivosLista(); $('modal-motivos').classList.remove('hidden'); };
+  $('mot-busca').oninput = motivosLista;
+  $('mot-voltar').onclick = function () { $('modal-motivos').classList.add('hidden'); };
+  $('reg-fechar').onclick = function () { $('modal-reg').classList.add('hidden'); };
+  $('ab-arq').onchange = async function () {
+    var er = $('reg-erro'); er.classList.add('hidden'); regArq = null; $('ab-arq-info').textContent = '';
+    try { regArq = await lerArquivo(this.files[0]); if (regArq) $('ab-arq-info').textContent = '📎 ' + regArq.nome + ' (' + Math.round(regArq.dataUrl.length * 0.75 / 1024) + ' KB)'; }
+    catch (e) { this.value = ''; er.textContent = e.message; er.classList.remove('hidden'); }
+  };
+  $('reg-enviar').onclick = async function () {
+    var b = this, er = $('reg-erro'); er.classList.add('hidden'); b.disabled = true;
+    try {
+      var per = abModo() === 'periodo', comp = per || $('ab-completo').checked;
+      if (!regMotivo) throw new Error('Selecione o motivo.');
+      if (!$('ab-data').value || (per && !$('ab-fim').value)) throw new Error(per ? 'Informe as datas.' : 'Informe a data.');
+      if (!comp && (!$('ab-hini').value || !$('ab-hfim').value)) throw new Error('Informe a hora inicial e a hora final, ou marque o abono por dia completo.');
+      if (!$('ab-obs').value.trim()) throw new Error('Preencha a observação.');
+      var j = await api('ponto_abono_enviar', { motivo: regMotivo, modo: per ? 'periodo' : 'dia', data_ini: $('ab-data').value, data_fim: $('ab-fim').value, dia_completo: comp,
+        hora_ini: $('ab-hini').value, hora_fim: $('ab-hfim').value, observacao: $('ab-obs').value, arquivo: regArq ? regArq.dataUrl : null, arquivo_nome: regArq ? regArq.nome : null });
+      if (!j.sucesso) throw new Error(j.erro);
+      $('modal-reg').classList.add('hidden'); aviso('Solicitação de abono enviada para aprovação do gestor.', 'ok');
+      await carregar();
+    } catch (e) { er.textContent = e.message; er.classList.remove('hidden'); } finally { b.disabled = false; }
+  };
+
+  /* ---------------- histórico ---------------- */
+  var bh = $('btn-historico'); if (bh) bh.onclick = async function () {
+    var j = await api('ponto_historico'); if (!j.sucesso) return aviso(j.erro, 'erro');
+    $('hist-titulo').textContent = 'Histórico da folha vigente (' + dataBR(j.inicio) + ' a ' + dataBR(j.fim) + ')';
+    $('hist-corpo').innerHTML = j.dias.map(function (d) {
+      return '<div class="dia-hist"><div class="cab"><span>' + DIAS[d.dow] + ', ' + dataBR(d.data) + '</span><span>' + (d.trabalhado_min != null ? fmtMin(d.trabalhado_min) : '') + '</span></div>' +
+        d.batidas.map(function (b) { return '<div class="b ' + ((b.status === 'recusada' || b.status === 'cancelada' || b.status === 'removida') ? 'cancel' : '') + '"><span>' + ROTULOS[b.tipo] + '</span><span><b>' + hhmm(b.momento) + '</b> ' + selo(b) + '</span></div>'; }).join('') +
+        (d.alerta ? '<div class="al">' + esc(d.alerta) + '</div>' : '') + '</div>';
+    }).join('') || '<div class="mudo">Sem registros.</div>';
+    $('modal-hist').classList.remove('hidden');
+  };
+  $('hist-fechar').onclick = function () { $('modal-hist').classList.add('hidden'); };
+
+  if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
+  carregar().catch(function () { mostrar('tela-login'); });
+})();
+</script>
+<script>
+/* janelas: clicar fora (no fundo escuro) ou apertar Esc fecha; a câmera não fecha assim para não interromper a captura */
+(function () {
+  var dn = null;
+  document.addEventListener('mousedown', function (e) { dn = e.target; });
+  document.addEventListener('touchstart', function (e) { dn = e.target; }, { passive: true });
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t === dn && t.classList && t.classList.contains('modal') && t.id !== 'modal-cam') t.classList.add('hidden');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var l = document.querySelectorAll('.modal:not(.hidden):not(#modal-cam)');
+    if (l.length) l[l.length - 1].classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aprovações — SmartNOC</title>
+<meta name="theme-color" content="#060a1a">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="tema.css">
+</head>
+<body class="gestao min-h-screen" data-modo="aprovacoes">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-ant" viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 24 L19 54 M32 24 L45 54 M25 42 H39"/>
+    <path d="M19 15a19 19 0 0 0 0 14 M45 15a19 19 0 0 1 0 14" stroke-width="4"/>
+    <path d="M24 18a10 10 0 0 0 0 8 M40 18a10 10 0 0 1 0 8" stroke-width="4"/>
+    <circle cx="32" cy="22" r="3" fill="#fff" stroke="none"/>
+  </symbol>
+</svg>
+<div class="max-w-6xl mx-auto p-4">
+  <header class="topo" data-pag="aprovacoes"></header>
+  <script src="nav.js?v=2"></script>
+  <div id="erro-geral" class="hidden rounded-lg bg-red-100 text-red-700 font-bold text-sm p-3 mb-3"></div>
+  <main id="painel" class="hidden bg-white rounded-xl shadow">
+    <div id="abas" class="flex flex-wrap gap-1 px-5 pt-3 border-b text-xs font-bold"></div>
+    <div id="corpo" class="p-5"></div>
+  </main>
+</div>
+<div id="foto-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"><img id="foto-img" class="max-h-[85vh] rounded-lg shadow-2xl" alt="Foto da batida"></div>
+<script src="gestao.js?v=1794144421"></script>
+</body>
+</html>

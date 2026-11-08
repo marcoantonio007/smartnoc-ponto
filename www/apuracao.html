@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apuração de Batida — SmartNOC</title>
+<meta name="theme-color" content="#060a1a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="tema.css">
+<style>
+.wrap.larga{max-width:1100px}
+.nav-folha{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.nav-folha .tit{text-align:center;flex:1}
+.nav-folha .tit b{display:block;font-size:18px;font-weight:800;color:var(--txt)}
+.nav-folha .tit span{font-size:12px;color:var(--mudo);font-weight:700}
+.nav-folha button{width:44px;height:44px;border-radius:12px;border:1px solid var(--linha);background:var(--card);color:var(--txt);font-size:22px;font-weight:800;cursor:pointer}
+.nav-folha button:disabled{opacity:.35;cursor:default}
+.resumo{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+@media (min-width:600px){.resumo{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:760px){.resumo{grid-template-columns:repeat(6,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--linha);border-radius:14px;padding:12px}
+.kpi small{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mudo)}
+.kpi b{display:block;margin-top:4px;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi b.pos{color:#8ce3c2}.kpi b.neg{color:#ff9aa1}.kpi b.amb{color:#f1cf86}
+.dica-folha{font-size:12px;color:var(--mudo);margin:0 2px 12px;line-height:1.5}
+.dia{background:var(--card);border:1px solid var(--linha);border-radius:14px;margin-bottom:8px;display:grid;grid-template-columns:1fr;gap:8px;padding:12px 14px;font-weight:800;font-size:15px}
+.dia.futuro{opacity:.55}.dia.hoje{border-color:var(--azul)}
+@media (min-width:700px){.dia{grid-template-columns:200px 1fr 240px;align-items:center;column-gap:14px}}
+.sd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dd{white-space:nowrap}
+.ddw{display:flex;align-items:center;gap:8px;min-width:0}
+.hbtn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1px solid var(--linha);background:rgba(255,255,255,.05);color:var(--azul2);cursor:pointer;padding:0}
+.hbtn:hover{border-color:var(--azul2)}
+.hbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media (min-width:700px){.cols{grid-template-columns:repeat(var(--n,5),minmax(0,88px));justify-content:start}}
+.c.addx{border-style:dashed;color:var(--azul2);display:flex;align-items:center;justify-content:center;min-height:50px;font-size:12px;font-weight:800;line-height:1.2}
+.c.addx:hover{border-color:var(--azul2)}
+@media (max-width:699px){.cols:empty,.cols.soadd,.c.addx{display:none}}
+.dmob{display:none}
+@media (max-width:699px){.dmob{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;font-size:11px;border-radius:8px}}
+.c{position:relative;background:rgba(255,255,255,.04);border:1px solid var(--linha);border-radius:10px;padding:6px 4px;text-align:center;min-width:0}
+.c small{display:block;font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--mudo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c b{display:block;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.c.pend{border-color:rgba(224,169,59,.5)}.c.pend b{color:#f1cf86}
+.c.apr{border-color:rgba(47,163,122,.75)}
+button.c{font-family:inherit;color:inherit;width:100%;cursor:pointer}
+.c.clic:hover{border-color:var(--azul2)}
+.c.sug{border-style:dashed;background:transparent}
+.c.sug b{color:var(--mudo2);font-weight:700}
+.fi{position:absolute;top:4px;right:4px;width:12px;height:12px;stroke:#8ce3c2;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tot{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px}
+.tot:empty{display:none}
+.tt{display:flex;flex-direction:column;gap:3px;width:100%;max-width:240px}
+@media (max-width:699px){.tt{max-width:none}}
+.lh{display:flex;justify-content:space-between;gap:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--mudo)}
+.lh b{white-space:nowrap;font-size:13px;color:var(--txt);font-variant-numeric:tabular-nums}
+.lh.pos,.lh.pos b{color:#8ce3c2}.lh.neg,.lh.neg b{color:#ff9aa1}
+button.lh{background:transparent;border:0;padding:0;font-family:inherit;cursor:pointer;width:100%;text-align:left;white-space:nowrap}
+.lh.amb,.lh.amb b{color:#f1cf86}
+.info-bat{font-size:14px;line-height:1.55;color:#c8d2ec;margin-bottom:12px}
+.info-bat .linha{display:flex;align-items:center;gap:6px;margin:3px 0}
+.info-bat .fi{position:static;width:16px;height:16px}
+.hist-bat{font-size:12px;color:var(--mudo);margin:8px 0 12px}
+.hist-bat div{margin:3px 0}
+.vp{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;margin-bottom:6px;border:1px solid var(--linha);border-radius:10px;background:rgba(255,255,255,.04);font-weight:800;font-variant-numeric:tabular-nums}
+.vp button{border:0;background:transparent;color:#ffb3b8;font-size:18px;cursor:pointer;padding:0 4px}
+.acoes{display:flex;gap:8px;flex-wrap:wrap}
+.btn.sec{background:rgba(255,255,255,.07);color:var(--txt)}
+.btn.verm{background:rgba(224,98,107,.2);color:#ffb3b8}
+.mini{border:1px solid var(--linha);background:rgba(255,255,255,.05);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;min-height:36px}
+.hreg{border:1px solid var(--linha);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,.03);font-size:13px;line-height:1.5;color:#c8d2ec}
+.hreg h4{margin:0 0 4px;font-size:14px;font-weight:800;color:var(--txt);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.hreg div{margin:2px 0}.hreg b{color:var(--txt)}
+.hsec{margin:14px 0 8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mudo)}
+.htl{border-left:2px solid var(--linha);margin-left:6px;padding-left:12px}
+.hev{position:relative;margin-bottom:10px;font-size:13px;line-height:1.5;color:#c8d2ec}
+.hev:before{content:'';position:absolute;left:-18px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--azul2)}
+.hev b{color:var(--txt)}.hev small{display:block;color:var(--mudo);font-size:11px;word-break:break-all}
+.chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.08);color:#b8c3e0;white-space:nowrap}
+.chip.ok{background:rgba(47,163,122,.2);color:#8ce3c2}.chip.pend{background:rgba(224,169,59,.18);color:#f1cf86}.chip.bad{background:rgba(224,98,107,.18);color:#ffb3b8}
+.escolha{margin:6px 0 14px}
+.escolha .rot{display:block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--mudo)}
+.ap-ta{position:relative;margin-top:6px}
+.ap-ta input{width:100%;max-width:420px;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--linha);background:var(--card);color:var(--txt);font-size:15px;font-weight:700}
+.ap-lista{position:absolute;left:0;top:100%;margin-top:4px;z-index:30;width:100%;max-width:420px;max-height:260px;overflow-y:auto;background:var(--card);border:1px solid var(--linha);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.ap-lista button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--txt);background:transparent;border:0;cursor:pointer}
+.ap-lista button small{color:var(--mudo);font-weight:700;margin-left:6px}
+.ap-lista button:hover,.ap-lista button.on{background:rgba(96,165,250,.18)}
+.ap-lista .vz{padding:10px 12px;font-size:13px;color:var(--mudo)}
+.nb{display:inline-block;min-width:18px;padding:1px 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;text-align:center}
+#ap-sel{margin-top:8px;font-size:13px;font-weight:700}
+.ap-fila{margin-top:10px;font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pp{background:var(--card);border:1px solid #b7791f;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.pp-tit{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:14px}
+.pp-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--linha);font-size:13px}
+.pp-info{flex:1;min-width:200px}.pp-info .mudo{font-size:12px;margin-top:2px}
+.pp-acoes{display:flex;gap:6px}
+.mini.ok{background:#15803d;border-color:#15803d;color:#fff}.mini.ruim{background:#b91c1c;border-color:#b91c1c;color:#fff}
+</style>
+</head>
+<body data-modo="apuracao">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-hist" viewBox="0 0 24 24"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 6H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2"/><path d="M9 12h6M9 16h4"/></symbol>
+  <symbol id="ic-face" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1M15 10v1M9.5 15c1.5 1.3 3.5 1.3 5 0"/></symbol>
+  <symbol id="ic-ant" viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 24 L19 54 M32 24 L45 54 M25 42 H39"/>
+    <path d="M19 15a19 19 0 0 0 0 14 M45 15a19 19 0 0 1 0 14" stroke-width="4"/>
+    <path d="M24 18a10 10 0 0 0 0 8 M40 18a10 10 0 0 1 0 8" stroke-width="4"/>
+    <circle cx="32" cy="22" r="3" fill="#fff" stroke="none"/>
+  </symbol>
+</svg>
+<div class="wrap larga">
+  <header class="topo" data-pag="apuracao"></header>
+  <script src="nav.js?v=2"></script>
+
+  <div id="aviso" class="aviso hidden"></div>
+
+  <section class="escolha">
+    <label class="rot">Colaborador
+      <div class="ap-ta"><input id="ap-colab" type="text" autocomplete="off" placeholder="Digite o nome do colaborador…"><div id="ap-lista" class="ap-lista hidden"></div></div>
+    </label>
+    <div id="ap-sel" class="mudo"></div>
+    <div id="ap-fila" class="ap-fila"></div>
+  </section>
+
+  <main id="conteudo" class="hidden">
+    <div class="nav-folha">
+      <button id="f-ant" aria-label="Folha anterior">&lsaquo;</button>
+      <div class="tit"><b id="f-titulo"></b><span id="f-periodo"></span></div>
+      <button id="f-prox" aria-label="Próxima folha">&rsaquo;</button>
+    </div>
+    <div id="pend-painel" class="pp hidden"></div>
+    <div class="resumo">
+      <div class="kpi"><small>Horas previstas</small><b id="k-prev">00:00</b></div>
+      <div class="kpi"><small>Horas trabalhadas</small><b id="k-trab">00:00</b></div>
+      <div class="kpi"><small>Hora extra</small><b id="k-extra">00:00</b></div>
+      <div class="kpi"><small>Hora a pagar</small><b id="k-pagar">00:00</b></div>
+      <div class="kpi"><small>Dias a ajustar</small><b id="k-pend">0</b></div>
+      <div class="kpi"><small>Solicitações</small><b id="k-solic">0</b></div>
+    </div>
+    <div id="f-dias"></div>
+  </main>
+</div>
+
+<!-- MODAL BATIDA -->
+<div id="modal-bat" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span id="bat-tit"></span><button id="bat-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="bat-corpo"></div>
+    <div id="bat-erro" class="err hidden"></div>
+  </div>
+</div>
+
+<!-- MODAL HORA EXTRA -->
+<div id="modal-he" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span>Hora extra — VIDPOL atendidos</span><button id="he-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="he-info" class="info-bat"></div>
+    <div id="he-lista"></div>
+    <div id="he-just-ver"></div>
+    <div id="he-form">
+      <div id="he-blk-vp">
+        <label class="rot" style="margin-top:12px">Incluir VIDPOL (6 dígitos; pode colar vários separados por vírgula ou espaço)
+          <input id="he-novo" inputmode="numeric" autocomplete="off" placeholder="Ex.: 123456, 654321"></label>
+      </div>
+      <div id="he-blk-just" style="display:none">
+        <label class="rot" style="margin-top:12px">Justificativa da hora extra
+          <textarea id="he-just" rows="3" maxlength="500" placeholder="Ex.: atendimento sem chamado aberto — apoio à equipe"></textarea></label>
+      </div>
+      <label id="he-sem-box" style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="he-sem" style="width:18px;height:18px;min-width:18px;margin:0;padding:0;cursor:pointer"><span>Não há VIDPOL para esta hora extra</span></label>
+      <div id="he-erro" class="err hidden"></div>
+      <button id="he-add" type="button" class="btn" style="margin-top:12px">Adicionar VIDPOL</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL HISTÓRICO -->
+<div id="modal-hist" class="modal hidden">
+  <div class="modal-box" style="max-width:560px;max-height:88vh;overflow:auto">
+    <div class="modal-topo"><span id="hist-tit">Histórico do dia</span><button id="hist-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="hist-corpo"></div>
+  </div>
+</div>
+
+<!-- MODAL HORA EXTRA MANUAL (dia sem expediente) -->
+<div id="modal-extra" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span>Adicionar registro de hora extra</span><button id="ex-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <div id="ex-corpo"></div>
+    <div id="ex-erro" class="err hidden"></div>
+  </div>
+</div>
+<script src="folha.js?v=1794145430"></script>
+<script>
+/* janelas: clicar fora (no fundo escuro) ou apertar Esc fecha; a câmera não fecha assim para não interromper a captura */
+(function () {
+  var dn = null;
+  document.addEventListener('mousedown', function (e) { dn = e.target; });
+  document.addEventListener('touchstart', function (e) { dn = e.target; }, { passive: true });
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t === dn && t.classList && t.classList.contains('modal') && t.id !== 'modal-cam') t.classList.add('hidden');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var l = document.querySelectorAll('.modal:not(.hidden):not(#modal-cam)');
+    if (l.length) l[l.length - 1].classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

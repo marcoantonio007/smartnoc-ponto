@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard — SmartNOC</title>
+<meta name="theme-color" content="#060a1a">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="tema.css">
+<style>
+.wrap.dash{max-width:1100px}
+.d-tit{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
+.d-tit h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.01em}
+.mudo{color:var(--mudo);font-size:12px;font-weight:700}
+.d-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:24px 0 10px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mudo)}
+.d-sec b{color:var(--txt)}
+.fnav{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
+.fnav button{width:34px;height:34px;border-radius:10px;border:1px solid var(--linha);background:var(--card);color:var(--txt);font-size:18px;font-weight:800;cursor:pointer;padding:0}
+.fnav button:disabled{opacity:.35;cursor:default}
+.fnav span{min-width:150px;text-align:center;font-size:13px;font-weight:800;color:var(--txt)}
+.fnav small{display:block;font-size:11px;color:var(--mudo);font-weight:700}
+.kgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:600px){.kgrid{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:900px){.kgrid{grid-template-columns:repeat(6,1fr)}}
+.kt{background:var(--card);border:1px solid var(--linha);border-radius:14px;padding:12px;min-width:0}
+.kt small{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mudo)}
+.kt b{display:block;margin-top:4px;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.kt em{display:block;margin-top:4px;font-style:normal;font-size:11px;font-weight:700;color:var(--mudo)}
+.kt.ruim{border-color:rgba(224,98,107,.55)}.kt.ruim b{color:#ff9aa1}
+.kt.atencao{border-color:rgba(224,169,59,.5)}.kt.atencao b{color:#f1cf86}
+.kt.bom b{color:#8ce3c2}
+.d-cols{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media (min-width:900px){.d-cols{grid-template-columns:1fr 1fr}}
+.pn{background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:14px;min-width:0}
+.pn h3{margin:0 0 8px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pn .topo-pn{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.pn .topo-pn h3{margin:0}
+.rol{max-height:360px;overflow-y:auto;padding-right:2px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--linha);font-size:13px}
+.li:first-child{border-top:0}
+.li .info{flex:1;min-width:190px;line-height:1.5}
+.nm{background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:800;text-transform:uppercase;color:var(--txt);cursor:pointer;text-align:left}
+.nm:hover{color:var(--azul2);text-decoration:underline}
+.li small,.sub{color:var(--mudo);font-size:12px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.nb{display:inline-block;min-width:20px;padding:1px 7px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;font-weight:800;text-align:center}
+.nb.zero{background:rgba(255,255,255,.1);color:var(--mudo)}
+.rk{display:grid;grid-template-columns:minmax(80px,1.1fr) 1.6fr auto;gap:10px;align-items:center;padding:7px 0;font-size:13px}
+.rk .v{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barra{height:8px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.barra i{display:block;height:100%;border-radius:6px;background:var(--azul2)}
+.barra.amb i{background:#e0a93b}
+.vazio{padding:16px 0;color:var(--mudo);font-size:13px;font-weight:700;text-align:center}
+.mini{border:1px solid var(--linha);background:rgba(255,255,255,.05);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;min-height:36px}
+.mini:hover{border-color:var(--azul2)}.mini:disabled{opacity:.5;cursor:default}
+.mini.ok{background:#15803d;border-color:#15803d;color:#fff}.mini.ruim{background:#b91c1c;border-color:#b91c1c;color:#fff}
+.acoes{display:flex;gap:6px;flex-wrap:wrap}
+.mov{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--linha);font-size:13px;line-height:1.45}
+.mov:first-child{border-top:0}
+.mov time{flex:0 0 auto;min-width:78px;color:var(--mudo);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.mov b{text-transform:uppercase}
+.chip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.08);color:#b8c3e0;white-space:nowrap}
+.chip.ok{background:rgba(47,163,122,.2);color:#8ce3c2}.chip.pend{background:rgba(224,169,59,.18);color:#f1cf86}.chip.bad{background:rgba(224,98,107,.18);color:#ffb3b8}
+.sk{opacity:.5}
+
+:root{--c1:#3987e5;--c2:#d95926;--c3:#199e70;--cn:#6f7ba0}
+.pn.larg{grid-column:1/-1}
+.pn .sub-pn{margin:-2px 0 8px;color:var(--mudo);font-size:12px;font-weight:600}
+.tg{display:inline-flex;border:1px solid var(--linha);border-radius:9px;overflow:hidden;flex:0 0 auto}
+.tg button{background:none;border:0;color:var(--mudo);font:inherit;font-size:11px;font-weight:800;padding:5px 10px;cursor:pointer;min-height:28px}
+.tg button[aria-pressed=true]{background:rgba(255,255,255,.1);color:var(--txt)}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 6px;font-size:12px;font-weight:700;color:var(--mudo)}
+.leg span{display:inline-flex;align-items:center;gap:6px}.leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.gc{position:relative;min-height:60px}
+.gsvg{display:block;max-width:100%;overflow:visible}
+.g-grid{stroke:rgba(255,255,255,.07);stroke-width:1}.g-base{stroke:rgba(255,255,255,.22)}
+.g-yt,.g-xt{fill:#8d99bd;font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.g-fdst{fill:#66739a}.g-hojet{fill:#e6ecff;font-weight:800}
+.g-fds{fill:rgba(255,255,255,.03)}.g-hl{fill:transparent}.g-col.on .g-hl{fill:rgba(255,255,255,.07)}.g-col{outline:none}
+.g-col:focus-visible .g-hl{fill:rgba(255,255,255,.12)}
+.g-cross{stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:3 3}
+.g-marca{fill:#e6ecff;font-size:11px;font-weight:800}
+.g-dot,.g-hdot{stroke:#10162a;stroke-width:2}
+.g-hit{outline:none}
+.gtip{position:fixed;z-index:60;pointer-events:none;background:#0b1126;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:12px;min-width:120px;max-width:240px}
+.gtip.hidden{display:none}
+.gtip-t{font-weight:800;margin-bottom:4px;color:var(--txt)}
+.gtip-r{display:flex;align-items:center;gap:7px;line-height:1.55}
+.gtip-k{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.gtip-v{font-variant-numeric:tabular-nums;color:var(--txt)}.gtip-n{color:var(--mudo);font-weight:600}
+.seg{display:flex;gap:2px;height:44px;border-radius:8px;overflow:hidden}
+.seg-b{min-width:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;outline:none;border-radius:0}
+.seg-b:first-child{border-radius:8px 0 0 8px}.seg-b:last-child{border-radius:0 8px 8px 0}.seg-b:only-child{border-radius:8px}
+.seg-b:focus-visible{box-shadow:inset 0 0 0 2px #fff}
+.seg-leg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:12px;font-weight:700;color:var(--mudo)}
+.seg-l{display:inline-flex;align-items:center;gap:6px}.seg-l i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.gtab-w{max-height:300px;overflow:auto}
+.gtab{width:100%;border-collapse:collapse;font-size:12.5px}
+.gtab th,.gtab td{padding:6px 8px;border-top:1px solid var(--linha);text-align:left}.gtab th{color:var(--mudo);font-size:11px;letter-spacing:.05em;text-transform:uppercase;border-top:0;position:sticky;top:0;background:var(--card)}
+.gtab .num{text-align:right;font-variant-numeric:tabular-nums}
+.rk .barra i{background:var(--c1)}
+button.nm.nm2{font-size:13px}
+.hid{display:none}
+</style>
+</head>
+<body>
+<div class="wrap dash">
+  <header class="topo" data-pag="dashboard"></header>
+  <script src="nav.js?v=2"></script>
+
+  <div id="aviso" class="aviso hidden"></div>
+
+  <main id="conteudo" class="hidden">
+    <div class="d-tit">
+      <div><h1>Dashboard</h1><span id="d-atual" class="mudo"></span></div>
+      <button id="d-atualizar" type="button" class="mini">Atualizar agora</button>
+    </div>
+
+    <div class="d-sec"><span>Hoje · <b id="d-hoje"></b></span></div>
+    <div id="k-hoje" class="kgrid"></div>
+    <section class="pn larg" style="margin-top:12px">
+      <h3>Situação da jornada hoje</h3>
+      <div class="sub-pn">Dos colaboradores que têm expediente hoje, em que ponto cada um está.</div>
+      <div id="g-hoje" class="gc"></div>
+    </section>
+
+    <div class="d-cols">
+      <section class="pn">
+        <div class="topo-pn"><h3>Batidas pendentes hoje <span id="n-pend" class="nb zero">0</span></h3></div>
+        <div id="l-pend" class="rol"></div>
+      </section>
+      <section class="pn">
+        <div class="topo-pn"><h3>Aguardando aprovação <span id="n-apr" class="nb zero">0</span></h3><div id="acoes-apr" class="acoes"></div></div>
+        <div id="k-apr" class="mudo" style="margin-bottom:4px"></div>
+        <div id="l-apr" class="rol"></div>
+      </section>
+    </div>
+
+    <div class="d-sec">
+      <span>Folha · <b id="f-per"></b></span>
+      <div class="fnav"><button id="f-ant" type="button" aria-label="Folha anterior">&lsaquo;</button><span id="f-tit"></span><button id="f-prox" type="button" aria-label="Próxima folha">&rsaquo;</button></div>
+    </div>
+    <div id="k-folha" class="kgrid sk"></div>
+    <div class="d-sec"><span>Indicadores do período</span></div>
+    <div id="k-ind" class="kgrid sk"></div>
+    <div class="d-cols">
+      <section class="pn larg" id="c-pres"></section>
+      <section class="pn larg" id="c-extra"></section>
+      <section class="pn" id="c-setor"></section>
+      <section class="pn" id="c-atraso"></section>
+      <section class="pn" id="c-origem"></section>
+      <section class="pn" id="c-solic"></section>
+    </div>
+
+    <div class="d-sec"><span>Por colaborador</span></div>
+    <div class="d-cols" style="margin-top:0">
+      <section class="pn"><h3>Horas extras por colaborador</h3><div id="r-extra"></div></section>
+      <section class="pn"><h3>Dias a ajustar por colaborador</h3><div id="r-ajustar"></div></section>
+    </div>
+
+    <div class="d-sec"><span>Acompanhamento</span></div>
+    <div class="d-cols" style="margin-top:0">
+      <section class="pn"><h3>Últimas movimentações</h3><div id="l-mov" class="rol"></div></section>
+      <section class="pn"><h3>Cadastro de colaboradores</h3><div id="l-cad"></div></section>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL RECUSA -->
+<div id="modal-rec" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-topo"><span id="rec-tit">Recusar solicitação</span><button id="rec-fechar" class="x" aria-label="Fechar">&times;</button></div>
+    <label class="rot">Motivo da recusa (obrigatório, mínimo de 5 caracteres)
+      <textarea id="rec-motivo" rows="3" maxlength="300" style="width:100%;margin-top:6px"></textarea></label>
+    <div id="rec-erro" class="err hidden"></div>
+    <button id="rec-ok" class="btn" style="margin-top:12px">Confirmar recusa</button>
+  </div>
+</div>
+
+<script src="dashgraf.js"></script>
+<script src="dashboard.js"></script>
+<script>
+/* janelas: clicar fora (no fundo escuro) ou apertar Esc fecha */
+(function () {
+  var dn = null;
+  document.addEventListener('mousedown', function (e) { dn = e.target; });
+  document.addEventListener('touchstart', function (e) { dn = e.target; }, { passive: true });
+  document.addEventListener('click', function (e) { var t = e.target; if (t === dn && t.classList && t.classList.contains('modal')) t.classList.add('hidden'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var l = document.querySelectorAll('.modal:not(.hidden)'); if (l.length) l[l.length - 1].classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

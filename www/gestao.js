@@ -376,7 +376,10 @@
         var a = b.getAttribute('data-a'), n = b.getAttribute('data-n'), r;
         if (a === 'regra') return abaRegra(c, n);
         if (a === 'rosto') { if (!confirm('Resetar o cadastro facial de ' + n + '? Ela(e) precisará cadastrar o rosto de novo.')) return; r = await api('ponto_admin_resetar_rosto', { nome: n }); }
-        else r = await api('ponto_admin_ativar', { nome: n, ativo: b.getAttribute('data-v') === '1' });
+        else {
+          if (b.getAttribute('data-v') !== '1' && !confirm('Desativar o ponto de ' + n + '?\n\nPela LGPD, o cadastro facial (foto e biometria) será apagado. As batidas já registradas continuam guardadas. Se for reativado, precisará cadastrar o rosto de novo.')) return;
+          r = await api('ponto_admin_ativar', { nome: n, ativo: b.getAttribute('data-v') === '1' });
+        }
         if (!r.sucesso) return toast(r.erro, 'error');
         toast('Atualizado.'); abrirAba();
       };

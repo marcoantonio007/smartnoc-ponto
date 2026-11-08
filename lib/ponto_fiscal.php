@@ -21,6 +21,10 @@ function ptLgpdExpurgo($pdo) {
     $pdo->prepare("INSERT INTO configuracoes (chave, valor) VALUES ('ponto_lgpd_expurgo', :v) ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor")->execute(['v' => $hoje]);
     $n = $pdo->exec("UPDATE ponto_batidas SET foto = NULL WHERE foto IS NOT NULL AND momento < now() - interval '" . (int)PT_LGPD_FOTOS_MESES . " months'");
     if ($n && function_exists('auditar')) auditar($pdo, 'sistema', 'PONTO', "LGPD: $n foto(s) de batidas com mais de " . PT_LGPD_FOTOS_MESES . ' meses apagadas automaticamente');
+    // LGPD_DESLIG_V1: cadastro facial (foto + biometria) de quem foi desativado no ponto ou saiu da Escala
+    $b = $pdo->exec("UPDATE ponto_colaboradores p SET descritor = NULL, foto_cadastro = NULL, cadastrado_em = NULL
+                     WHERE (p.descritor IS NOT NULL OR p.foto_cadastro IS NOT NULL) AND (NOT p.ativo OR NOT EXISTS (SELECT 1 FROM funcionarios f WHERE f.nome = p.nome))");
+    if ($b && function_exists('auditar')) auditar($pdo, 'sistema', 'PONTO', "LGPD: cadastro facial de $b colaborador(es) desativado(s) ou desligado(s) apagado automaticamente");
     return (int)$n;
 }
 
@@ -97,7 +101,8 @@ function ptAfdSincronizar($pdo, $cfg) {
         }
         $prev = (string)$pdo->query("SELECT hash FROM ponto_afd WHERE tipo = 7 ORDER BY nsr DESC LIMIT 1")->fetchColumn();
         $q = $pdo->query("SELECT b.id, b.nome, to_char(b.momento,'YYYY-MM-DD HH24:MI:SS') AS m, to_char(COALESCE((COALESCE(b.sincronizado_em, b.criado_em) AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo', b.momento),'YYYY-MM-DD HH24:MI:SS') AS g,
-                                 b.offline, f.cpf, COALESCE(NULLIF(f.nome_completo, ''), f.nome) AS nc
+                                 b.offline, f.cpf, COALESCE(NULLIF(f.nome_completo, ''), f.nome) AS nc,
+                                 (SELECT e.agente FROM ponto_eventos e WHERE e.batida_id = b.id AND e.evento = 'BATIDA_FACIAL' ORDER BY e.id LIMIT 1) AS agente
                           FROM ponto_batidas b JOIN funcionarios f ON f.nome = b.nome
                           LEFT JOIN ponto_afd a ON a.chave = 'bat:' || b.id
                           WHERE b.origem = 'facial' AND a.nsr IS NULL ORDER BY COALESCE(b.sincronizado_em, b.criado_em, b.momento), b.id");
@@ -114,7 +119,7 @@ function ptAfdSincronizar($pdo, $cfg) {
                 $ins->execute(['n' => $n, 't' => 5, 'c' => $chCol, 'l' => ptUtf($l . ptCrc16($l)), 'h' => null, 'd' => date('Y-m-d', $g), 'g' => date('Y-m-d H:i:s', $g)]);
             }
             $n = $nsr(); $m = strtotime($b['m']); $g = strtotime($b['g']);
-            $base = ptFxN($n, 9) . '7' . ptDH($m) . ptFxN($cpf, 12) . ptDH($g) . '02' . (($b['offline'] === true || $b['offline'] === 't' || $b['offline'] === 1 || $b['offline'] === '1') ? '1' : '0');
+            $base = ptFxN($n, 9) . '7' . ptDH($m) . ptFxN($cpf, 12) . ptDH($g) . (strpos((string)($b['agente'] ?? ''), 'PontoApp/') !== false ? '01' : '02') . (($b['offline'] === true || $b['offline'] === 't' || $b['offline'] === 1 || $b['offline'] === '1') ? '1' : '0');
             $hash = hash('sha256', $base . $prev);
             $ins->execute(['n' => $n, 't' => 7, 'c' => 'bat:' . $b['id'], 'l' => ptUtf($base . $hash), 'h' => $hash, 'd' => date('Y-m-d', $m), 'g' => date('Y-m-d H:i:s', $g)]);
             $prev = $hash;

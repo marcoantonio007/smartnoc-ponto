@@ -727,7 +727,8 @@ case 'ponto_admin_ativar': {
     if (!$st->fetchColumn()) erro('Colaborador não encontrado.');
     $pdo->prepare("INSERT INTO ponto_colaboradores (nome, ativo) VALUES (:n, :a) ON CONFLICT (nome) DO UPDATE SET ativo = EXCLUDED.ativo")
         ->execute(['a' => !empty($in['ativo']) ? 'true' : 'false', 'n' => $nome]);
-    auditar($pdo, $_SESSION['usuario'], 'PONTO', (!empty($in['ativo']) ? 'Ativou' : 'Desativou') . " o ponto de $nome");
+    if (empty($in['ativo'])) $pdo->prepare("UPDATE ponto_colaboradores SET descritor = NULL, foto_cadastro = NULL, cadastrado_em = NULL WHERE nome = :n")->execute(['n' => $nome]); // LGPD
+    auditar($pdo, $_SESSION['usuario'], 'PONTO', (!empty($in['ativo']) ? 'Ativou' : 'Desativou') . " o ponto de $nome" . (empty($in['ativo']) ? ' (cadastro facial apagado - LGPD)' : ''));
     resp(['sucesso' => true]);
 }
 case 'ponto_admin_pendencias': {

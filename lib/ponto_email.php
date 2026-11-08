@@ -34,6 +34,14 @@ function ptOpcaoSalvar($pdo, $chave, $val) {
 }
 function ptGestorEdita($pdo) { return ptOpcao($pdo, 'ponto_gestor_edita', true); }
 function ptEmailAuto($pdo) { return ptOpcao($pdo, 'ponto_email_auto', true); }
+// SESSAO_INATIV_V1: minutos sem uso até encerrar a sessão (gestores também na Escala)
+const PT_SESSAO_GESTOR_OP = [15, 30, 60, 120, 240];
+const PT_SESSAO_COLAB_OP = [30, 60, 120, 240, 480];
+function ptSessaoMin($pdo, $gestor) {
+    try { $st = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = :c"); $st->execute(['c' => $gestor ? 'sessao_gestor_min' : 'ponto_sessao_colab_min']); $v = $st->fetchColumn(); }
+    catch (Exception $e) { $v = false; }
+    return ($v === false || (int)$v <= 0) ? ($gestor ? 30 : 480) : (int)$v;
+}
 
 /* ---------- exportação de registros ---------- */
 function ptRegistrosPeriodo($pdo, $ini, $fim, $filtro) { // mesma consulta da aba Registros

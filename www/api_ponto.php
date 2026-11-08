@@ -2,6 +2,7 @@
 // api_ponto.php — API do ponto eletrônico (ponto.smartnoc.com.br).
 // Login com as mesmas credenciais da escala (tabela usuarios). Colaborador = usuário vinculado a um funcionário. Gestor = perfil admin/mestre.
 $seguro = getenv('PONTO_COOKIE_SECURE') === '1';
+ini_set('session.gc_maxlifetime', '43200'); // SESSAO_INATIV_V1: o limite real de inatividade é controlado depois da conexão
 session_name('PONTOSESS');
 session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $seguro, 'httponly' => true, 'samesite' => 'Lax']);
 session_start();
@@ -18,6 +19,14 @@ function erro($msg, $code = 200) { resp(['sucesso' => false, 'erro' => $msg], $c
 if (!$pdo) erro('Sem conexão com o banco de dados.', 500);
 try { ptGarantirTabelas($pdo); ptGarantirAtestados($pdo); ptGarantirHoraExtra($pdo); ptEmailGarantir($pdo); ptFiscalGarantir($pdo); } catch (Exception $e) { erro('Falha ao preparar o banco: ' . $e->getMessage(), 500); }
 try { ptLgpdExpurgo($pdo); } catch (Exception $e) { error_log('ponto: expurgo LGPD falhou: ' . $e->getMessage()); }
+if (!empty($_SESSION['usuario'])) { // SESSAO_INATIV_V1: sem uso além do limite => sessão encerrada (atualização automática do painel, com &auto=1, não conta como uso)
+    $limSes = ptSessaoMin($pdo, ehGestor());
+    if (isset($_SESSION['ult_uso']) && time() - (int)$_SESSION['ult_uso'] > $limSes * 60) {
+        $_SESSION = []; session_regenerate_id(true);
+        if (($_GET['action'] ?? '') !== 'ponto_login') erro('Sua sessão foi encerrada por inatividade. Entre novamente.', 401);
+    }
+    elseif (empty($_GET['auto']) || !isset($_SESSION['ult_uso'])) $_SESSION['ult_uso'] = time();
+}
 register_shutdown_function('ptSyncFimDaRequisicao', $pdo); // hora extra -> Escala mensal
 register_shutdown_function('ptEmailFimDaRequisicao', $pdo); // relatório de fim de folha por e-mail (gatilho do site; o cron também pode enviar)
 
@@ -86,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function ehGestor() { $p = $_SESSION['perfil'] ?? ''; return isset($_SESSION['usuario']) && ($p === 'admin' || $p === 'mestre'); }
-function exigeGestor() { if (!ehGestor()) erro('Acesso restrito a gestores.', 403); }
+function exigeGestor() { if (empty($_SESSION['usuario'])) erro('Sessão expirada. Entre novamente.', 401); if (!ehGestor()) erro('Acesso restrito a gestores.', 403); }
 function exigeLogin() { if (empty($_SESSION['usuario'])) erro('Sessão expirada. Entre novamente.', 401); }
 function exigeColab($pdo) {
     exigeLogin();
@@ -1132,13 +1141,19 @@ case 'ponto_admin_foto': {
 case 'ponto_admin_opcoes': { // opções da aba Regra de horário
     exigeGestor();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        foreach (['sessao_gestor_min' => PT_SESSAO_GESTOR_OP, 'sessao_colab_min' => PT_SESSAO_COLAB_OP] as $k => $ops) if (array_key_exists($k, $in)) {
+            if (!in_array((int)$in[$k], $ops, true)) erro('Tempo inválido.');
+            $pdo->prepare("INSERT INTO configuracoes (chave, valor) VALUES (:c, :v) ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor")
+                ->execute(['c' => $k === 'sessao_gestor_min' ? 'sessao_gestor_min' : 'ponto_sessao_colab_min', 'v' => (string)(int)$in[$k]]);
+            auditar($pdo, $_SESSION['usuario'], 'PONTO', 'Sessão encerrada por inatividade (' . ($k === 'sessao_gestor_min' ? 'gestores' : 'colaboradores') . '): ' . (int)$in[$k] . ' min');
+        }
         $map = ['gestor_edita' => 'ponto_gestor_edita', 'email_auto' => 'ponto_email_auto'];
         foreach ($map as $k => $chave) if (array_key_exists($k, $in)) {
             ptOpcaoSalvar($pdo, $chave, !empty($in[$k]));
             auditar($pdo, $_SESSION['usuario'], 'PONTO', ($k === 'gestor_edita' ? 'Gestor pode incluir/remover batidas dos subordinados' : 'Relatório automático da folha por e-mail') . ': ' . (!empty($in[$k]) ? 'habilitado' : 'desabilitado'));
         }
     }
-    resp(['sucesso' => true, 'gestor_edita' => ptGestorEdita($pdo), 'email_auto' => ptEmailAuto($pdo), 'smtp' => smtpConfigurado(smtpConfigLer($pdo))]);
+    resp(['sucesso' => true, 'sessao_gestor_min' => ptSessaoMin($pdo, true), 'sessao_colab_min' => ptSessaoMin($pdo, false), 'gestor_edita' => ptGestorEdita($pdo), 'email_auto' => ptEmailAuto($pdo), 'smtp' => smtpConfigurado(smtpConfigLer($pdo))]);
 }
 case 'ponto_admin_email': { // e-mail do colaborador (destino dos avisos e do relatório da folha)
     exigeGestor(); $nome = trim($in['nome'] ?? ''); $em = trim((string)($in['email'] ?? ''));

@@ -397,7 +397,7 @@
       '<div class="flex flex-wrap gap-3 items-end">' + inp('fi-cnpj', 'CNPJ do empregador', f.cnpj, '00.000.000/0000-00') + inp('fi-razao', 'Razão social', f.razao, '', '20rem') +
       inp('fi-local', 'Local de prestação de serviço', f.local, 'Ex.: Salvador/BA', '20rem') + inp('fi-inpi', 'Registro do programa no INPI', f.inpi, '17 dígitos, se houver') +
       inp('fi-cpfresp', 'CPF do responsável', f.cpf_resp, '000.000.000-00') + inp('fi-devcnpj', 'CNPJ/CPF do desenvolvedor', f.dev_cnpj) +
-      inp('fi-devrazao', 'Nome do desenvolvedor', f.dev_razao, '', '20rem') + inp('fi-devemail', 'E-mail do desenvolvedor', f.dev_email) +
+      inp('fi-devrazao', 'Nome do desenvolvedor', f.dev_razao, '', '20rem') + inp('fi-devemail', 'E-mail do desenvolvedor (recebe os alertas)', f.dev_email) +
       '<button id="fi-salvar" type="button" class="px-4 py-2 rounded bg-blue-600 text-white text-xs font-bold">Salvar dados</button></div>' +
       (o.sem_cpf.length ? '<div class="mt-2 p-2 rounded text-[11px] font-bold" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.5);color:#fcd34d">⚠ Sem CPF válido (ficam fora dos arquivos até cadastrar na Escala): ' + o.sem_cpf.map(esc).join(', ') + '</div>' : '') +
       '<div class="mt-3 flex flex-wrap gap-3 items-end"><label class="text-[10px] font-bold text-slate-500 uppercase">De<input id="fi-ini" type="date" class="mt-1 text-xs block" value="' + pf[0] + '"></label>' +
@@ -437,9 +437,13 @@
     var lin = function (id, chk, tit, ajuda) {
       return '<label class="flex items-start gap-3 py-2 cursor-pointer"><input type="checkbox" id="' + id + '" class="mt-1" ' + (chk ? 'checked' : '') + '><span><span class="block text-sm font-bold text-slate-700">' + tit + '</span><span class="block text-[11px] text-slate-500">' + ajuda + '</span></span></label>';
     };
+    var rotMin = function (m) { return m < 60 ? m + ' min' : (m / 60) + (m === 60 ? ' hora' : ' horas'); };
+    var selSes = function (id, rot, v, ops) { return '<label class="text-[10px] font-bold text-slate-500 uppercase">' + rot + '<select id="' + id + '" class="mt-1 text-xs block" style="width:9rem">' + ops.map(function (m) { return '<option value="' + m + '"' + (m === +v ? ' selected' : '') + '>' + rotMin(m) + '</option>'; }).join('') + '</select></label>'; };
     d.innerHTML = '<h3 class="text-sm font-bold text-slate-700 mb-1">Permissões e avisos</h3>' +
       lin('op-gestor', o.gestor_edita, 'O gestor pode incluir e remover batidas dos subordinados', 'Desabilitado: na Apuração de Batida o gestor só consulta a folha e aprova ou recusa os pedidos dos colaboradores; não lança nem remove batidas por eles.') +
       lin('op-email', o.email_auto, 'Enviar o relatório da folha por e-mail ao fim da folha', 'No dia 15 (após as 07:00) cada colaborador com e-mail cadastrado recebe o espelho da folha: parabéns se estiver tudo certo, ou a lista das datas a regularizar.') +
+      '<div class="py-2"><span class="block text-sm font-bold text-slate-700">Encerrar a sessão por inatividade</span><span class="block text-[11px] text-slate-500 mb-1">Sem uso nesse tempo, a pessoa precisa entrar de novo. O tempo dos gestores vale também para a Escala. O painel aberto atualizando sozinho não conta como uso.</span>' +
+      '<div class="flex flex-wrap gap-4">' + selSes('op-ses-g', 'Gestores', o.sessao_gestor_min, [15, 30, 60, 120, 240]) + selSes('op-ses-c', 'Colaboradores', o.sessao_colab_min, [30, 60, 120, 240, 480]) + '</div></div>' +
       (o.smtp ? '' : '<div class="mt-1 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700">O servidor de e-mail (SMTP) ainda não foi configurado. Configure em Escala → Configurações → E-mail (SMTP).</div>');
     c.appendChild(d);
     var salvar = async function (campo, caixa) {
@@ -450,6 +454,14 @@
     };
     el('op-gestor').onchange = function () { salvar('gestor_edita', this); };
     el('op-email').onchange = function () { salvar('email_auto', this); };
+    ['op-ses-g', 'op-ses-c'].forEach(function (id) {
+      el(id).onchange = async function () {
+        var b = {}; b[id === 'op-ses-g' ? 'sessao_gestor_min' : 'sessao_colab_min'] = +this.value;
+        var r = await api('ponto_admin_opcoes', b);
+        if (!r.sucesso) return toast(r.erro, 'error');
+        toast('Opção salva.');
+      };
+    });
   }
   var FLEX_OPCOES = [0, 15, 30, 45, 60, 75, 90, 105, 120];
   function rotFlex(m) { return m === 0 ? 'Sem flexibilidade' : '± ' + (m < 60 ? m + ' min' : m === 60 ? '1 hora' : m === 120 ? '2 horas' : Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0')); }

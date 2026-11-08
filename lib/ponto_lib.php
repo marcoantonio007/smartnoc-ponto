@@ -284,14 +284,65 @@ function ptPascoa($ano) { // algoritmo de Gauss/Meeus (não depende da extensão
 function ptLen($s) { return function_exists('mb_strlen') ? mb_strlen($s) : strlen($s); }
 
 // Feriados fixos cadastrados + móveis nacionais principais: dia sem obrigação de ponto
-function ptEhFeriado($pdo, $data) {
+// FERIADOS_LOCAIS_V1: nacionais valem para todos; estaduais para a UF do "Local de prestação de serviço" (Arquivos fiscais);
+// municipais para o colaborador cuja "Localidade" (cadastro da Escala) é a cidade do feriado. Cadastro em Escala → Configurações → Feriados.
+function ptLocNorm($s) { return trim(function_exists('mb_strtoupper') ? mb_strtoupper((string)$s, 'UTF-8') : strtoupper((string)$s)); }
+function ptFeriadosCad($pdo) { // [MM-DD => [[tipo, nome, loc], ...]] — lido uma vez por requisição
+    static $c = null; if ($c !== null) return $c;
+    $c = [];
+    try {
+        $q = $pdo->query("SELECT 1 FROM information_schema.columns WHERE table_name = 'feriados' AND column_name = 'localidade'");
+        $temLoc = (bool)$q->fetchColumn();
+        $q = $pdo->query("SELECT to_char(data_feriado,'MM-DD') AS md, lower(COALESCE(tipo, 'nacional')) AS tipo, COALESCE(nome, '') AS nome, " . ($temLoc ? "COALESCE(localidade, '')" : "''") . " AS loc
+                          FROM feriados WHERE data_feriado IS NOT NULL" . ($temLoc ? '' : " AND tipo = 'nacional'"));
+        foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $r) $c[$r['md']][] = $r;
+    } catch (Exception $e) {}
+    return $c;
+}
+function ptUfEmpresa($pdo) { // UF do local de prestação de serviço (ex.: "Salvador/BA" => BA); padrão BA
+    static $uf = null; if ($uf !== null) return $uf;
+    $uf = 'BA';
+    try { $q = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'ponto_fiscal'"); $q->execute(); $v = json_decode((string)$q->fetchColumn(), true);
+          if (is_array($v) && preg_match('/([A-Za-z]{2})\s*$/', trim((string)($v['local'] ?? '')), $m)) $uf = strtoupper($m[1]); } catch (Exception $e) {}
+    return $uf;
+}
+function ptLocalidadeColab($pdo, $nome) { // cidade do colaborador (campo Localidade da Escala)
+    static $c = [];
+    if ($nome === null || $nome === '') return '';
+    if (!array_key_exists($nome, $c)) {
+        try { $st = $pdo->prepare("SELECT localidade FROM funcionarios WHERE nome = :n"); $st->execute(['n' => $nome]); $c[$nome] = ptLocNorm($st->fetchColumn() ?: ''); }
+        catch (Exception $e) { $c[$nome] = ''; }
+    }
+    return $c[$nome];
+}
+function ptFeriadoInfo($pdo, $data, $nome = null) { // ['tipo' => nacional|estadual|municipal|movel, 'nome' => ...] ou null
+    $lista = ptFeriadosCad($pdo)[substr($data, 5, 5)] ?? [];
+    foreach (['nacional', 'estadual', 'municipal'] as $t) foreach ($lista as $f) {
+        if ($f['tipo'] !== $t) continue;
+        if ($t === 'estadual' && ptLocNorm($f['loc']) !== ptUfEmpresa($pdo)) continue;
+        if ($t === 'municipal') { $cid = ptLocalidadeColab($pdo, $nome); if ($cid === '' || ptLocNorm($f['loc']) !== $cid) continue; }
+        return ['tipo' => $t, 'nome' => trim($f['nome'])];
+    }
+    $pasc = ptPascoa((int)substr($data, 0, 4));
+    foreach ([-47 => 'Carnaval', -2 => 'Sexta-feira Santa', 60 => 'Corpus Christi'] as $off => $n)
+        if (date('Y-m-d', strtotime($pasc . ' ' . sprintf('%+d', $off) . ' days')) === $data) return ['tipo' => 'movel', 'nome' => $n];
+    return null;
+}
+function ptEhFeriado($pdo, $data, $nome = null) { return ptFeriadoInfo($pdo, $data, $nome) !== null; }
+function ptFeriadoNome($pdo, $data, $nome = null) { // ex.: "Feriado Municipal: Aniversário da cidade de Salvador/BA"
+    $f = ptFeriadoInfo($pdo, $data, $nome); if (!$f) return null;
+    $rot = ['nacional' => 'Feriado Nacional', 'estadual' => 'Feriado Estadual', 'municipal' => 'Feriado Municipal', 'movel' => 'Feriado'][$f['tipo']];
+    return $f['nome'] !== '' ? $rot . ': ' . $f['nome'] : $rot;
+}
+// versões antigas (só feriados nacionais), mantidas sem uso
+function ptEhFeriadoV0($pdo, $data) {
     $st = $pdo->prepare("SELECT 1 FROM feriados WHERE tipo = 'nacional' AND to_char(data_feriado,'MM-DD') = :md LIMIT 1");
     try { $st->execute(['md' => substr($data, 5, 5)]); if ($st->fetchColumn()) return true; } catch (Exception $e) {}
     $pasc = ptPascoa((int)substr($data, 0, 4));
     foreach ([-47, -2, 60] as $off) if (date('Y-m-d', strtotime($pasc . ' ' . sprintf('%+d', $off) . ' days')) === $data) return true;
     return false;
 }
-function ptFeriadoNome($pdo, $data) { // texto do feriado do dia (ex.: "Feriado Nacional: Proclamação da República"); null se não for feriado
+function ptFeriadoNomeV0($pdo, $data) { // texto do feriado do dia (ex.: "Feriado Nacional: Proclamação da República"); null se não for feriado
     try {
         $st = $pdo->prepare("SELECT nome FROM feriados WHERE tipo = 'nacional' AND to_char(data_feriado,'MM-DD') = :md LIMIT 1");
         $st->execute(['md' => substr($data, 5, 5)]); $r = $st->fetch(PDO::FETCH_ASSOC);
@@ -405,7 +456,7 @@ function ptBancoFolgasItens($pdo, $status, $ini = null, $fim = null, $nomeLike =
 function ptDiaSemObrigacao($pdo, $nome, $data) {
     if (ptBancoFolgaAprovada($pdo, $nome, $data)) return true; // folga do banco de horas aprovada
     $ad = ptAdmissao($pdo, $nome); if ($ad && $data < $ad) return true; // antes da admissão: sem jornada, sem cobrança, sem horas previstas
-    if (ptEhFeriado($pdo, $data)) return true;
+    if (ptEhFeriado($pdo, $data, $nome)) return true;
     try { // atestado médico de dia inteiro aprovado: o dia não tem obrigação de ponto
         $st = $pdo->prepare("SELECT 1 FROM ponto_atestados WHERE nome = :n AND tipo = 'dia' AND status = 'aprovada' AND data_ini <= :d AND data_fim >= :d LIMIT 1");
         $st->execute(['n' => $nome, 'd' => $data]);
@@ -460,7 +511,7 @@ function ptStatusDia($pdo, $regra, $nome, $data, $agora = null) {
         $x = []; foreach ($ativas as $b) $x[$b['tipo']] = strtotime($b['momento']);
         $trab += max(0, (int)round(($x['EXTRA_SAIDA'] - $x['EXTRA_ENTRADA']) / 60));
     }
-    $ad0 = ptAdmissao($pdo, $nome); $preAd = (bool)($ad0 && $data < $ad0); $ferNome = ($sem && !$preAd) ? ptFeriadoNome($pdo, $data) : null;
+    $ad0 = ptAdmissao($pdo, $nome); $preAd = (bool)($ad0 && $data < $ad0); $ferNome = ($sem && !$preAd) ? ptFeriadoNome($pdo, $data, $nome) : null;
     $abonos = []; // abonos/atestados aprovados ou em análise que cobrem o dia (aparecem no ponto do colaborador)
     try {
         $q = $pdo->prepare("SELECT id, tipo, motivo, (arquivo IS NOT NULL) AS tem_anexo, to_char(hora_ini,'HH24:MI') AS hora_ini, to_char(hora_fim,'HH24:MI') AS hora_fim, status FROM ponto_atestados

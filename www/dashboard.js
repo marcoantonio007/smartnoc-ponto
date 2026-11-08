@@ -30,7 +30,7 @@
     if (tipo !== 'erro') setTimeout(function () { if (a.textContent === msg) a.classList.add('hidden'); }, 6000);
   }
   async function api(action, body) {
-    var r = await fetch('api_ponto.php?action=' + action, body === undefined ? { credentials: 'same-origin' } :
+    var r = await fetch('api_ponto.php?action=' + action + (window.ptAuto ? '&auto=1' : ''), body === undefined ? { credentials: 'same-origin' } :
       { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     var t = await r.text(), j;
     try { j = JSON.parse(t); } catch (e) { throw new Error('Resposta inválida do servidor.'); }
@@ -284,8 +284,8 @@
       $('conteudo').classList.remove('hidden');
       await carregarLeve();
       await carregarFolha();
-      setInterval(function () { if (!document.hidden && !est.ocupado) carregarLeve().catch(function () {}); }, 60000);
-      setInterval(function () { if (!document.hidden && !est.ocupado) carregarFolha().catch(function () {}); }, 300000);
+      setInterval(function () { if (!document.hidden && !est.ocupado) { window.ptAuto = 1; var p = carregarLeve(); window.ptAuto = 0; p.catch(function () {}); } }, 60000);
+      setInterval(function () { if (!document.hidden && !est.ocupado) { window.ptAuto = 1; var p = carregarFolha(); window.ptAuto = 0; p.catch(function () {}); } }, 300000);
     } catch (e) { aviso(e.message, 'erro'); }
   })();
 })();

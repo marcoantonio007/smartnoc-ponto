@@ -8,6 +8,7 @@ session_start();
 require_once '/var/www/lib/conexao.php';
 require_once '/var/www/lib/ponto_lib.php';
 require_once '/var/www/lib/ponto_email.php';
+require_once '/var/www/lib/ponto_fiscal.php'; // PORTARIA_671_V1: AFD/AEJ e LGPD
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -15,7 +16,8 @@ header('X-Content-Type-Options: nosniff');
 function resp($arr, $code = 200) { http_response_code($code); echo json_encode($arr, JSON_UNESCAPED_UNICODE); exit; }
 function erro($msg, $code = 200) { resp(['sucesso' => false, 'erro' => $msg], $code); }
 if (!$pdo) erro('Sem conexão com o banco de dados.', 500);
-try { ptGarantirTabelas($pdo); ptGarantirAtestados($pdo); ptGarantirHoraExtra($pdo); ptEmailGarantir($pdo); } catch (Exception $e) { erro('Falha ao preparar o banco: ' . $e->getMessage(), 500); }
+try { ptGarantirTabelas($pdo); ptGarantirAtestados($pdo); ptGarantirHoraExtra($pdo); ptEmailGarantir($pdo); ptFiscalGarantir($pdo); } catch (Exception $e) { erro('Falha ao preparar o banco: ' . $e->getMessage(), 500); }
+try { ptLgpdExpurgo($pdo); } catch (Exception $e) { error_log('ponto: expurgo LGPD falhou: ' . $e->getMessage()); }
 register_shutdown_function('ptSyncFimDaRequisicao', $pdo); // hora extra -> Escala mensal
 register_shutdown_function('ptEmailFimDaRequisicao', $pdo); // relatório de fim de folha por e-mail (gatilho do site; o cron também pode enviar)
 
@@ -274,7 +276,7 @@ case 'ponto_cadastrar_rosto': {
     if (!ptDescritorValido($in['descritor'] ?? null)) erro('Leitura do rosto inválida. Tente novamente.');
     if (!ptFotoValida($in['foto'] ?? null)) erro('Foto inválida.');
     if (empty($in['consentimento'])) erro('É necessário aceitar o uso dos dados biométricos.');
-    $pdo->prepare("UPDATE ponto_colaboradores SET descritor = :d, foto_cadastro = :f, cadastrado_em = now() WHERE nome = :n")
+    $pdo->prepare("UPDATE ponto_colaboradores SET descritor = :d, foto_cadastro = :f, cadastrado_em = now(), consentimento_em = now() WHERE nome = :n")
         ->execute(['d' => json_encode(array_map('floatval', $in['descritor'])), 'f' => $in['foto'], 'n' => $nome]);
     auditar($pdo, $nome, 'PONTO', 'Cadastrou o rosto para o ponto (com consentimento LGPD)');
     resp(['sucesso' => true]);
@@ -655,6 +657,28 @@ case 'ponto_banco_folga_cancelar': { // o colaborador desiste de um pedido de fo
     if (!$d) erro('Solicitação não encontrada ou já decidida.');
     evento($pdo, $id, $nome, $d, 'FOLGA_CANCELADA', 'FOLGA_BANCO', $d . ' 00:00:00', atorDe($nome), null);
     resp(['sucesso' => true]);
+}
+case 'ponto_admin_fiscal': { // dados do empregador/programa para os arquivos da Portaria 671
+    exigeGestor();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if ($e = ptFiscalSalvar($pdo, $in)) erro($e);
+        auditar($pdo, $_SESSION['usuario'], 'PONTO', 'Atualizou os dados fiscais do ponto (Portaria 671)');
+    }
+    resp(['sucesso' => true, 'cfg' => ptFiscalCfg($pdo), 'sem_cpf' => ptFiscalSemCpf($pdo)]);
+}
+case 'ponto_admin_afd':
+case 'ponto_admin_aej': { // download do AFD (marcações originais do REP-P) ou do AEJ (jornada tratada)
+    exigeGestor();
+    $ini = (string)($_GET['inicio'] ?? ''); $fim = (string)($_GET['fim'] ?? '');
+    if (!ptDataValida($ini) || !ptDataValida($fim) || $ini > $fim) erro('Período inválido.');
+    if ((strtotime($fim) - strtotime($ini)) / 86400 > 366) erro('Escolha um período de até 366 dias.');
+    @set_time_limit(300);
+    try { $arq = $action === 'ponto_admin_afd' ? ptAfdGerar($pdo, $ini, $fim) : ptAejGerar($pdo, $ini, $fim); } catch (Exception $e) { erro($e->getMessage()); }
+    auditar($pdo, $_SESSION['usuario'], 'PONTO', 'Gerou o ' . ($action === 'ponto_admin_afd' ? 'AFD' : 'AEJ') . " de $ini a $fim");
+    header_remove('Content-Type'); header('Content-Type: text/plain; charset=ISO-8859-1');
+    header('Content-Disposition: attachment; filename="' . $arq['nome'] . '"');
+    if (!empty($arq['sem_cpf'])) header('X-Sem-CPF: ' . rawurlencode(implode(', ', $arq['sem_cpf'])));
+    echo $arq['conteudo']; exit;
 }
 case 'ponto_admin_regra': { // sem ?nome= é a regra padrão; com ?nome= é a regra individual do colaborador
     exigeGestor(); $alvo = trim($_GET['nome'] ?? '');

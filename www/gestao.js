@@ -384,6 +384,49 @@
   }
 
   /* ------------------------------ regra de horário ------------------------------ */
+  async function fiscalRegra(c) { // PORTARIA_671_V1: dados do empregador e geração do AFD/AEJ
+    var o = await api('ponto_admin_fiscal'); if (!o.sucesso) return;
+    var f = o.cfg, d = doc.createElement('div'); d.className = 'mt-6 pt-4 border-t';
+    var pf = (typeof periodoFolha === 'function') ? periodoFolha() : ['', ''];
+    var inp = function (id, rot, v, ph, w) { return '<label class="text-[10px] font-bold text-slate-500 uppercase">' + rot + '<input id="' + id + '" class="mt-1 text-xs block" style="width:' + (w || '13rem') + '" value="' + esc(v || '') + '" placeholder="' + esc(ph || '') + '"></label>'; };
+    d.innerHTML = '<h3 class="text-sm font-bold text-slate-700 mb-1">Arquivos fiscais — Portaria 671 (AFD e AEJ)</h3>' +
+      '<p class="text-[11px] text-slate-400 mb-2">Dados do empregador e do programa de ponto (REP-P) usados nos arquivos. O CPF de cada colaborador é cadastrado na Escala (Editar Colaborador).</p>' +
+      '<div class="flex flex-wrap gap-3 items-end">' + inp('fi-cnpj', 'CNPJ do empregador', f.cnpj, '00.000.000/0000-00') + inp('fi-razao', 'Razão social', f.razao, '', '20rem') +
+      inp('fi-local', 'Local de prestação de serviço', f.local, 'Ex.: Salvador/BA', '20rem') + inp('fi-inpi', 'Registro do programa no INPI', f.inpi, '17 dígitos, se houver') +
+      inp('fi-cpfresp', 'CPF do responsável', f.cpf_resp, '000.000.000-00') + inp('fi-devcnpj', 'CNPJ/CPF do desenvolvedor', f.dev_cnpj) +
+      inp('fi-devrazao', 'Nome do desenvolvedor', f.dev_razao, '', '20rem') + inp('fi-devemail', 'E-mail do desenvolvedor', f.dev_email) +
+      '<button id="fi-salvar" type="button" class="px-4 py-2 rounded bg-blue-600 text-white text-xs font-bold">Salvar dados</button></div>' +
+      (o.sem_cpf.length ? '<div class="mt-2 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700">Sem CPF válido (ficam fora dos arquivos até cadastrar na Escala): ' + o.sem_cpf.map(esc).join(', ') + '</div>' : '') +
+      '<div class="mt-3 flex flex-wrap gap-3 items-end"><label class="text-[10px] font-bold text-slate-500 uppercase">De<input id="fi-ini" type="date" class="mt-1 text-xs block" value="' + pf[0] + '"></label>' +
+      '<label class="text-[10px] font-bold text-slate-500 uppercase">Até<input id="fi-fim" type="date" class="mt-1 text-xs block" value="' + pf[1] + '"></label>' +
+      '<button id="fi-afd" type="button" class="px-3 py-2 rounded border border-slate-400 text-slate-700 text-xs font-bold">⬇ Gerar AFD</button>' +
+      '<button id="fi-aej" type="button" class="px-3 py-2 rounded border border-slate-400 text-slate-700 text-xs font-bold">⬇ Gerar AEJ</button></div>' +
+      '<p class="text-[11px] text-slate-400 mt-1">AFD: marcações originais (facial) com NSR e hash encadeado. AEJ: jornada tratada (inclusões, desconsiderações, almoço automático), horários contratuais, faltas e banco de horas. A assinatura digital (.p7s com certificado ICP-Brasil) é feita à parte.</p>';
+    c.appendChild(d);
+    el('fi-salvar').onclick = async function () {
+      var b = this; b.disabled = true;
+      try {
+        var r = await api('ponto_admin_fiscal', { cnpj: el('fi-cnpj').value, razao: el('fi-razao').value, local: el('fi-local').value, inpi: el('fi-inpi').value,
+          cpf_resp: el('fi-cpfresp').value, dev_cnpj: el('fi-devcnpj').value, dev_razao: el('fi-devrazao').value, dev_email: el('fi-devemail').value });
+        if (!r.sucesso) return toast(r.erro, 'error');
+        toast('Dados fiscais salvos.');
+      } catch (e) { toast(e.message, 'error'); } finally { b.disabled = false; }
+    };
+    var baixar = async function (acao, b) {
+      var ini = el('fi-ini').value, fim = el('fi-fim').value; if (!ini || !fim) return toast('Informe o período.', 'error');
+      var rot = b.textContent; b.disabled = true; b.textContent = 'Gerando…';
+      try {
+        var r = await fetch('api_ponto.php?action=' + acao + '&inicio=' + ini + '&fim=' + fim, { credentials: 'same-origin' });
+        if (!/text\/plain/.test(r.headers.get('Content-Type') || '')) { var j = {}; try { j = await r.json(); } catch (e) {} return toast(j.erro || 'Não foi possível gerar o arquivo.', 'error'); }
+        var nomeArq = ((r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/) || [])[1] || (acao + '.txt');
+        var sem = r.headers.get('X-Sem-CPF'), blob = await r.blob(), u = URL.createObjectURL(blob), a = doc.createElement('a');
+        a.href = u; a.download = nomeArq; doc.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+        toast(sem ? 'Arquivo gerado. Ficaram de fora (sem CPF): ' + decodeURIComponent(sem) : 'Arquivo gerado.', sem ? 'error' : 'success');
+      } catch (e) { toast(e.message, 'error'); } finally { b.disabled = false; b.textContent = rot; }
+    };
+    el('fi-afd').onclick = function () { baixar('ponto_admin_afd', this); };
+    el('fi-aej').onclick = function () { baixar('ponto_admin_aej', this); };
+  }
   async function opcoesRegra(c) {
     var o = await api('ponto_admin_opcoes');
     if (!o.sucesso) return;
@@ -433,7 +476,7 @@
       (nome && j.individual ? '<button id="rg-padrao" type="button" class="px-4 py-2 rounded border text-xs font-bold">Voltar para a regra padrão</button>' : '') + '</div>' +
       '<p class="mt-2 text-[11px] text-slate-400">A tolerância define quando o sistema passa a alertar uma batida do dia como atrasada. A flexibilidade permite que o colaborador comece a jornada até o limite escolhido (máximo de 2 horas) antes ou depois do horário padrão: o fim do expediente e o almoço acompanham o horário real de entrada, mantendo a mesma carga horária.</p>';
     if (nome) el('rg-voltar').onclick = function () { abrirAba(); };
-    if (!nome) opcoesRegra(c);
+    if (!nome) { opcoesRegra(c); fiscalRegra(c); }
     el('rg-salvar').onclick = async function () {
       var out = { tolerancia: +el('rg-tol').value, flex_min: +el('rg-flex').value, almoco_auto: !!(el('rg-almauto') && el('rg-almauto').checked), banco_horas: !!(el('rg-banco') && el('rg-banco').checked), banco_inicio: el('rg-banco-ini') ? el('rg-banco-ini').value : '', dias: {} };
       Array.prototype.forEach.call(c.querySelectorAll('tr[data-dia]'), function (tr) {

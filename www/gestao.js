@@ -396,7 +396,7 @@
       inp('fi-cpfresp', 'CPF do responsável', f.cpf_resp, '000.000.000-00') + inp('fi-devcnpj', 'CNPJ/CPF do desenvolvedor', f.dev_cnpj) +
       inp('fi-devrazao', 'Nome do desenvolvedor', f.dev_razao, '', '20rem') + inp('fi-devemail', 'E-mail do desenvolvedor', f.dev_email) +
       '<button id="fi-salvar" type="button" class="px-4 py-2 rounded bg-blue-600 text-white text-xs font-bold">Salvar dados</button></div>' +
-      (o.sem_cpf.length ? '<div class="mt-2 p-2 rounded bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700">Sem CPF válido (ficam fora dos arquivos até cadastrar na Escala): ' + o.sem_cpf.map(esc).join(', ') + '</div>' : '') +
+      (o.sem_cpf.length ? '<div class="mt-2 p-2 rounded text-[11px] font-bold" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.5);color:#fcd34d">⚠ Sem CPF válido (ficam fora dos arquivos até cadastrar na Escala): ' + o.sem_cpf.map(esc).join(', ') + '</div>' : '') +
       '<div class="mt-3 flex flex-wrap gap-3 items-end"><label class="text-[10px] font-bold text-slate-500 uppercase">De<input id="fi-ini" type="date" class="mt-1 text-xs block" value="' + pf[0] + '"></label>' +
       '<label class="text-[10px] font-bold text-slate-500 uppercase">Até<input id="fi-fim" type="date" class="mt-1 text-xs block" value="' + pf[1] + '"></label>' +
       '<button id="fi-afd" type="button" class="px-3 py-2 rounded border border-slate-400 text-slate-700 text-xs font-bold">⬇ Gerar AFD</button>' +

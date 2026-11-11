@@ -4,7 +4,7 @@ if (!defined('PT_EMPRESA_NOME')) define('PT_EMPRESA_NOME', 'AVANTIA TECNOLOGIA E
 if (!defined('PT_EMPRESA_CNPJ')) define('PT_EMPRESA_CNPJ', '02.543.302/0001-31');
 
 class PtPdf {
-    private $c = ''; public $W = 595.28; public $H = 841.89; private $img = null;
+    private $c = ''; public $W = 595.28; public $H = 841.89; private $img = null; public $titulo = 'Espelho de ponto';
     private static $w = [32=>278,33=>278,34=>355,35=>556,36=>556,37=>889,38=>667,39=>191,40=>333,41=>333,42=>389,43=>584,44=>278,45=>333,46=>278,47=>278,
         48=>556,49=>556,50=>556,51=>556,52=>556,53=>556,54=>556,55=>556,56=>556,57=>556,58=>278,59=>278,60=>584,61=>584,62=>584,63=>556,64=>1015,
         65=>667,66=>667,67=>722,68=>722,69=>667,70=>611,71=>778,72=>722,73=>278,74=>500,75=>667,76=>556,77=>833,78=>722,79=>778,80=>667,81=>778,82=>722,
@@ -57,7 +57,7 @@ class PtPdf {
         $o[4] = "<< /Length " . strlen($cont) . "$filtro >>\nstream\n" . $cont . "\nendstream";
         $o[5] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
         $o[6] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-        $o[7] = '<< /Title (Espelho de ponto) /Producer (SmartNOC Ponto) >>';
+        $o[7] = '<< /Title (' . str_replace(['(', ')', '\\'], '', self::cp($this->titulo)) . ') /Producer (SmartNOC Ponto) >>';
         if ($this->img) { $i = $this->img; $o[8] = sprintf("<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace %s /BitsPerComponent 8 /Filter %s /Length %d >>\nstream\n", $i['w'], $i['h'], $i['cs'], $i['f'], strlen($i['d'])) . $i['d'] . "\nendstream"; }
         $pdf = "%PDF-1.4\n"; $off = [];
         foreach ($o as $n => $corpo) { $off[$n] = strlen($pdf); $pdf .= "$n 0 obj\n$corpo\nendobj\n"; }

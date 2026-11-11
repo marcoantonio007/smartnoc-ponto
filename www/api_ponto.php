@@ -476,6 +476,14 @@ case 'ponto_abono_enviar': { // Solicitar abono: motivo + dia ou período (dia c
     auditar($pdo, atorDe($nome), 'PONTO', "Solicitou $det" . porConta($nome));
     resp(['sucesso' => true, 'id' => $novoId]);
 }
+case 'ponto_comprovante_pdf': { // COMPROVANTE_V1: comprovante de uma batida (o colaborador, ou o gestor na Apuração com &alvo=)
+    $nome = exigeColab($pdo);
+    try { $c = ptComprovantePdf($pdo, (int)($_GET['id'] ?? 0), $nome); } catch (Exception $e) { erro($e->getMessage()); }
+    auditar($pdo, atorDe($nome), 'PONTO', 'Baixou o comprovante da batida #' . (int)$_GET['id'] . porConta($nome));
+    header_remove('Content-Type'); header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $c['arquivo'] . '"');
+    header('Content-Length: ' . strlen($c['bin'])); echo $c['bin']; exit;
+}
 case 'ponto_espelho_pdf': { // espelho de ponto da folha (uma única página A4)
     $nome = exigeColab($pdo); $regra = ptRegra($pdo, $nome);
     $ref = $_GET['ref'] ?? ptFolhaRefDe(date('Y-m-d'));

@@ -1,6 +1,6 @@
 // sw.js — service worker: permite instalar como app e abrir a página do ponto SEM internet
 // (a tela, o reconhecimento facial e a fila de batidas funcionam offline; a API sempre vai direto à rede).
-var V = 'ponto-v3';
+var V = 'ponto-comp1';
 var SHELL = ['./', 'index.html', 'nav.js', 'tema.css', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 var CDN = ['https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js'];
 

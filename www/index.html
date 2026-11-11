@@ -596,11 +596,15 @@
       var ativa = h.batidas.filter(function (b) { return b.tipo === t && ['valida', 'pendente', 'aprovada'].indexOf(b.status) >= 0; })[0];
       var rec = h.batidas.filter(function (b) { return b.tipo === t && b.status === 'recusada'; });
       var info = ativa ? '<span class="h">' + hhmm(ativa.momento) + '</span>' + selo(ativa) : '<span class="vazio">—</span>';
-      return '<div class="lin"><span class="r">' + rotH(h, t) + '</span><span>' + info + '</span></div>' +
+      var cid = (ativa && ativa.id && (ativa.status === 'valida' || ativa.status === 'aprovada')) ? ativa.id : 0; // COMPROVANTE_V1
+      return '<div class="lin' + (cid ? ' comp" data-comp="' + cid + '" data-rot="' + esc(rotH(h, t)) + '" data-hora="' + hhmm(ativa.momento) + '" title="Comprovante da batida' : '') + '"><span class="r">' + rotH(h, t) + '</span><span>' + info + (cid ? '<span class="ic-comp" aria-hidden="true">🧾</span>' : '') + '</span></div>' +
         rec.map(function (b) { return '<div class="rec">Recusada (' + hhmm(b.momento) + '): ' + esc(b.motivo_decisao || '') + '</div>'; }).join('');
     }).join('');
     if (h.trabalhado_min != null) linhas += '<div class="total">Trabalhado: ' + fmtMin(h.trabalhado_min) + (h.saldo_min ? ' · saldo ' + (h.saldo_min > 0 ? '+' : '−') + fmtMin(h.saldo_min) : '') + '</div>';
     $('lista-hoje').innerHTML = linhas;
+    Array.prototype.forEach.call(document.querySelectorAll('#lista-hoje [data-comp]'), function (el) { // COMPROVANTE_V1
+      el.onclick = function () { if (window.ptComprovanteAbrir) ptComprovanteAbrir({ id: +el.getAttribute('data-comp'), tipo: el.getAttribute('data-rot'), hora: el.getAttribute('data-hora'), data: h.data.split('-').reverse().join('/') }); };
+    });
 
     var al = j.alertas.filter(function (a) { return a.data !== h.data; });
     $('bloco-alertas').classList.add('hidden'); // HOME_SEM_ALERTAS_V1
@@ -899,5 +903,6 @@
   });
 })();
 </script>
+<script src="comprovante.js?v=1"></script>
 </body>
 </html>

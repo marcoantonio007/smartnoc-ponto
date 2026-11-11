@@ -225,6 +225,7 @@
       var origem = b.origem === 'facial' ? '<div class="linha">' + FACE + '<span>Registrada por reconhecimento facial</span></div>' : '<div class="linha"><span>Inclusão manual' + (b.status === 'aprovada' ? ' (aprovada)' : b.status === 'pendente' ? ' (aguardando aprovação)' : '') + '</span></div>';
       h += '<div class="info-bat"><div style="font-size:24px;font-weight:800">' + hhmm(b.momento) + '</div>' + origem +
         (b.justificativa ? '<div class="linha"><span>Justificativa: ' + esc(b.justificativa) + '</span></div>' : '') + '</div>';
+      if (b.id && (b.status === 'valida' || b.status === 'aprovada')) h += '<div id="bat-comp" style="margin:2px 0 14px"></div>'; // COMPROVANTE_V1
       if (hist) h += '<div class="hist-bat">' + hist + '</div>';
       if (b.status === 'pendente') {
         h += '<div class="acoes">' + (d.editavel ? '<button type="button" class="btn verm" data-act="cancelar-inc">Cancelar pedido</button>' : '') +
@@ -242,6 +243,7 @@
       } else h += msgFora();
     }
     $('bat-corpo').innerHTML = h;
+    if (b && $('bat-comp') && window.ptComprovanteBotoes) ptComprovanteBotoes($('bat-comp'), { id: b.id, alvo: (MODO && est.colab) ? est.colab : '' }); // COMPROVANTE_V1
     var hi = $('bat-hora');
     if (hi) { var up = function () { $('bat-proj').textContent = projecao(d, tipo, hi.value); }; hi.oninput = up; hi.onchange = up; up(); }
     $('modal-bat').classList.remove('hidden');

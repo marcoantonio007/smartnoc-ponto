@@ -217,3 +217,75 @@ function ptAejGerar($pdo, $ini, $fim) {
     return ['nome' => 'AEJ_' . ptSoDig($cfg['cnpj']) . '_' . str_replace('-', '', $ini) . '_' . str_replace('-', '', $fim) . '.txt', 'conteudo' => implode("\r\n", $L) . "\r\n",
             'vinculos' => $vid, 'sem_cpf' => $semCpf];
 }
+
+/* ---------- COMPROVANTE_V1: comprovante de registro de ponto do trabalhador (PDF de uma batida) ---------- */
+function ptComprovantePdf($pdo, $id, $nome) {
+    require_once __DIR__ . '/ponto_pdf.php';
+    $st = $pdo->prepare("SELECT id, tipo, to_char(data_ref,'YYYY-MM-DD') AS data_ref, to_char(momento,'YYYY-MM-DD HH24:MI') AS momento, origem, status, lat, lng, precisao, offline,
+                                decidido_por, to_char((decidido_em AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'America/Sao_Paulo','DD/MM/YYYY HH24:MI') AS decidido_em
+                         FROM ponto_batidas WHERE id = :id AND nome = :n AND status IN ('valida','aprovada')");
+    $st->execute(['id' => (int)$id, 'n' => $nome]);
+    $b = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$b) throw new Exception('Batida não encontrada ou ainda não aprovada.');
+    $cfg = ptFiscalCfg($pdo);
+    $q = $pdo->prepare("SELECT cpf, COALESCE(NULLIF(nome_completo, ''), nome) AS nc FROM funcionarios WHERE nome = :n"); $q->execute(['n' => $nome]);
+    $fu = $q->fetch(PDO::FETCH_ASSOC) ?: ['cpf' => '', 'nc' => $nome];
+    $nsr = null; $hash = null; $coletor = '';
+    if ($b['origem'] === 'facial') {
+        if (ptCnpjValido($cfg['cnpj']) && ptCpfValido($fu['cpf'] ?? '')) { try { ptAfdSincronizar($pdo, $cfg); } catch (Exception $e) { error_log('ponto: comprovante/AFD: ' . $e->getMessage()); } }
+        $q = $pdo->prepare("SELECT nsr, hash, linha FROM ponto_afd WHERE chave = :c"); $q->execute(['c' => 'bat:' . $b['id']]);
+        if ($a = $q->fetch(PDO::FETCH_ASSOC)) { $nsr = (int)$a['nsr']; $hash = $a['hash']; $coletor = substr($a['linha'], 70, 2); }
+    }
+    $fds = ptDiaFds(ptBatidasDoDia($pdo, $nome, $b['data_ref']), ptDiaSemObrigacao($pdo, $nome, $b['data_ref']));
+    $rotulo = ($fds ? PT_LABEL_FDS : PT_LABEL)[$b['tipo']] ?? (PT_LABEL[$b['tipo']] ?? $b['tipo']);
+    $cpfF = function ($c) { $c = ptSoDig($c); return strlen($c) === 11 ? substr($c, 0, 3) . '.' . substr($c, 3, 3) . '.' . substr($c, 6, 3) . '-' . substr($c, 9) : 'não cadastrado'; };
+    $cnpjF = function ($c) { $c = ptSoDig($c); return strlen($c) === 14 ? substr($c, 0, 2) . '.' . substr($c, 2, 3) . '.' . substr($c, 5, 3) . '/' . substr($c, 8, 4) . '-' . substr($c, 12) : $c; };
+    $dt = strtotime($b['momento']);
+
+    $bin = null;
+    try { $q = $pdo->prepare("SELECT valor FROM configuracoes WHERE chave = 'logo_pdf_base64'"); $q->execute(); $v = $q->fetchColumn();
+          if (is_string($v) && preg_match('#^data:image/[a-z+.-]+;base64,(.+)$#s', trim($v), $m)) $bin = base64_decode($m[1], true) ?: null; } catch (Exception $e) {}
+    if (!$bin) foreach (['png', 'jpg', 'jpeg'] as $ext) { $arq = __DIR__ . '/logo_empresa.' . $ext; if (is_file($arq)) { $bin = file_get_contents($arq); break; } }
+    // desenha duas vezes: a primeira só mede a altura, para a página terminar logo depois do conteúdo
+    $desenhar = function ($pdf) use ($pdo, $b, $cfg, $fu, $nsr, $hash, $coletor, $rotulo, $cpfF, $cnpjF, $dt, $bin) {
+    $Wd = $pdf->W; $mx = 22; $dir = $Wd - $mx; $y = 24;
+    if ($bin && ($d = $pdf->carregaLogo($bin))) { $lh = 30; $lw = $lh * $d[0] / $d[1]; if ($lw > 130) { $lw = 130; $lh = $lw * $d[1] / $d[0]; } $pdf->logo(($Wd - $lw) / 2, $y - 6, $lw, $lh); $y += $lh + 12; }
+    $pdf->texto($Wd / 2, $y, 'COMPROVANTE DE REGISTRO DE PONTO', 10.5, true, 'c'); $y += 13;
+    $pdf->texto($Wd / 2, $y, 'DO TRABALHADOR', 10.5, true, 'c'); $y += 10;
+    $sep = function () use ($pdf, &$y, $mx, $dir) { $pdf->linha($mx, $y, $dir, $y, 0.5, 0.75); $y += 15; };
+    $campo = function ($rot, $val) use ($pdf, &$y, $mx, $dir) { $pdf->texto($mx, $y, mb_strtoupper($rot, 'UTF-8'), 6.3, true, 'l', 0.45); $y += 11; $pdf->ajustado($mx, $y, (string)$val, 9.5, $dir - $mx); $y += 15; };
+    $sep();
+    $campo('Empregador', $cfg['razao']);
+    $campo('CNPJ', $cnpjF($cfg['cnpj']));
+    if (trim($cfg['local']) !== '') $campo('Local de prestação de serviço', $cfg['local']);
+    $sep();
+    $campo('Trabalhador', $fu['nc']);
+    $campo('CPF', $cpfF($fu['cpf'] ?? ''));
+    $sep();
+    $pdf->texto($mx, $y, 'DATA E HORA DA MARCAÇÃO', 6.3, true, 'l', 0.45); $y += 20;
+    $pdf->texto($mx, $y, date('d/m/Y', $dt) . '   ' . date('H:i', $dt), 17, true); $y += 18;
+    $campo('Tipo', $rotulo);
+    if ($b['origem'] === 'facial') {
+        $campo('NSR', $nsr ? sprintf('%09d', $nsr) : 'pendente (CPF do colaborador ou CNPJ não cadastrado)');
+        $campo('Origem', 'Reconhecimento facial - ' . ($coletor === '01' ? 'aplicativo' : 'navegador') . (in_array($b['offline'], [true, 't', 1, '1'], true) ? ' (registrada sem internet)' : ''));
+    } elseif ($b['origem'] === 'sistema') {
+        $campo('Origem', 'Almoço registrado automaticamente pelo sistema (regra de horário)');
+    } else {
+        $campo('Origem', 'Inclusão manual aprovada' . ($b['decidido_por'] ? ' por ' . $b['decidido_por'] : '') . ($b['decidido_em'] ? ' em ' . $b['decidido_em'] : ''));
+    }
+    if ($b['lat'] !== null && $b['lng'] !== null) $campo('Localização (GPS)', sprintf('%.5f, %.5f', $b['lat'], $b['lng']) . ($b['precisao'] ? ' (±' . round($b['precisao']) . ' m)' : ''));
+    $sep();
+    $campo('Programa de ponto (REP-P)', PT_PTRP_NOME . ' ' . PT_PTRP_VERSAO . ' - registro INPI: ' . (ptSoDig($cfg['inpi']) !== '' ? $cfg['inpi'] : 'não informado'));
+    if ($hash) {
+        $pdf->texto($mx, $y, 'CÓDIGO HASH (SHA-256)', 6.3, true, 'l', 0.45); $y += 11;
+        $pdf->texto($mx, $y, substr($hash, 0, 32), 7.6); $y += 10; $pdf->texto($mx, $y, substr($hash, 32), 7.6); $y += 15;
+    }
+    if ($b['origem'] !== 'facial') { $pdf->texto($Wd / 2, $y, 'Marcação tratada: não consta do AFD (arquivo das marcações originais).', 6.3, false, 'c', 0.4); $y += 10; }
+    $pdf->texto($Wd / 2, $y + 4, 'Emitido em ' . date('d/m/Y H:i') . ' - documento gerado eletronicamente.', 6.3, false, 'c', 0.4);
+    return $y + 4;
+    };
+    $m = new PtPdf(); $m->W = 300; $m->H = 2000; $alt = $desenhar($m);
+    $pdf = new PtPdf(); $pdf->W = 300; $pdf->H = ceil($alt + 22); $pdf->titulo = 'Comprovante de registro de ponto';
+    $desenhar($pdf);
+    return ['bin' => $pdf->saida(), 'arquivo' => 'comprovante-ponto-' . date('Ymd-Hi', $dt) . '.pdf'];
+}

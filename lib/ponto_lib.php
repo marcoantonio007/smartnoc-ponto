@@ -286,7 +286,11 @@ function ptLen($s) { return function_exists('mb_strlen') ? mb_strlen($s) : strle
 // Feriados fixos cadastrados + móveis nacionais principais: dia sem obrigação de ponto
 // FERIADOS_LOCAIS_V1: nacionais valem para todos; estaduais para a UF do "Local de prestação de serviço" (Arquivos fiscais);
 // municipais para o colaborador cuja "Localidade" (cadastro da Escala) é a cidade do feriado. Cadastro em Escala → Configurações → Feriados.
-function ptLocNorm($s) { return trim(function_exists('mb_strtoupper') ? mb_strtoupper((string)$s, 'UTF-8') : strtoupper((string)$s)); }
+function ptLocNorm($s) { // CIDADE_NORM_V1: compara cidades sem acento e sem "/UF" ("VITÓRIA DA CONQUISTA/BA" = "Vitoria da Conquista")
+    $s = trim(function_exists('mb_strtoupper') ? mb_strtoupper((string)$s, 'UTF-8') : strtoupper((string)$s));
+    $s = strtr($s, ['Á' => 'A', 'À' => 'A', 'Â' => 'A', 'Ã' => 'A', 'É' => 'E', 'Ê' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ç' => 'C']);
+    return trim(preg_replace('~\s*[/\-]\s*[A-Z]{2}$~', '', $s));
+}
 function ptFeriadosCad($pdo) { // [MM-DD => [[tipo, nome, loc], ...]] — lido uma vez por requisição
     static $c = null; if ($c !== null) return $c;
     $c = [];

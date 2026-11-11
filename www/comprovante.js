@@ -1,11 +1,11 @@
-/* comprovante.js — COMPROVANTE_V1: comprovante da batida em PDF, para baixar ou compartilhar (tela inicial, Minha folha e Apuração) */
+/* comprovante.js — COMPROVANTE_V2: comprovante da batida em PDF para baixar (tela inicial, Minha folha, Histórico do dia e Apuração) */
 (function () {
-  var podeComp = false;
-  try { podeComp = !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] })); } catch (e) {}
   var css = document.createElement('style');
   css.textContent = '.lin.comp{cursor:pointer}.lin.comp:hover .r{color:#fff}.ic-comp{margin-left:8px;font-size:13px;opacity:.7}' +
-    '.comp-bts{display:flex;gap:8px;flex-wrap:wrap}.comp-bts .btn{flex:1;min-width:140px;width:auto;padding:13px;font-size:14px}' +
-    '.comp-bts .btn.comp-sec{background:transparent;border:1px solid rgba(255,255,255,.28);box-shadow:none;color:inherit}.comp-err{color:#ff9aa1;font-size:13px;font-weight:700;margin-top:8px}';
+    '.comp-bts .btn{width:100%;padding:13px;font-size:14px}' +
+    '.comp-bts .comp-mini{background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:8px;color:#9fc0f5;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer}' +
+    '.comp-bts .comp-mini:hover{background:rgba(255,255,255,.06)}.comp-bts .comp-mini:disabled{opacity:.5;cursor:default}' +
+    '.comp-err{color:#ff9aa1;font-size:13px;font-weight:700;margin-top:6px}';
   document.head.appendChild(css);
   function obter(id, alvo) {
     return fetch('api_ponto.php?action=ponto_comprovante_pdf&id=' + encodeURIComponent(id) + (alvo ? '&alvo=' + encodeURIComponent(alvo) : ''), { credentials: 'same-origin' })
@@ -20,26 +20,17 @@
     var u = URL.createObjectURL(c.blob), a = document.createElement('a');
     a.href = u; a.download = c.nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 5000);
   }
-  // Botões "Baixar" e "Compartilhar" dentro de um elemento; o PDF é gerado assim que os botões aparecem (o compartilhar fica imediato)
+  // Botão "Baixar comprovante" dentro de um elemento (o PDF só é gerado ao clicar). o.compacto = botão pequeno (Histórico do dia)
   window.ptComprovanteBotoes = function (cx, o) {
-    cx.innerHTML = '<div class="comp-bts"><button type="button" class="btn" data-c="baixar">⬇ Baixar comprovante</button>' +
-      (podeComp ? '<button type="button" class="btn comp-sec" data-c="share">↗ Compartilhar</button>' : '') + '</div><div class="comp-err" hidden></div>';
-    var pr = null, er = cx.querySelector('.comp-err');
-    var pegar = function () { if (!pr) pr = obter(o.id, o.alvo); pr.catch(function () { pr = null; }); return pr; };
-    pegar();
-    Array.prototype.forEach.call(cx.querySelectorAll('[data-c]'), function (b) {
-      b.onclick = function () {
-        var rot = b.textContent; b.disabled = true; er.hidden = true;
-        pegar().then(function (c) {
-          if (b.getAttribute('data-c') !== 'share') return baixar(c);
-          return navigator.share({ files: [new File([c.blob], c.nome, { type: 'application/pdf' })], title: 'Comprovante de ponto' })
-            .catch(function (e) { if (e && e.name !== 'AbortError') baixar(c); });
-        }).catch(function (e) { er.textContent = e.message; er.hidden = false; })
-          .then(function () { b.disabled = false; b.textContent = rot; });
-      };
-    });
+    cx.innerHTML = '<div class="comp-bts"><button type="button" class="' + (o.compacto ? 'comp-mini' : 'btn') + '">⬇ Baixar comprovante' + (o.compacto ? ' (PDF)' : '') + '</button></div><div class="comp-err" hidden></div>';
+    var b = cx.querySelector('button'), er = cx.querySelector('.comp-err');
+    b.onclick = function () {
+      var rot = b.textContent; b.disabled = true; b.textContent = 'Gerando…'; er.hidden = true;
+      obter(o.id, o.alvo).then(baixar).catch(function (e) { er.textContent = e.message; er.hidden = false; })
+        .then(function () { b.disabled = false; b.textContent = rot; });
+    };
   };
-  // Janela do comprovante (tela inicial): horário da batida + botões
+  // Janela do comprovante (tela inicial): horário da batida + botão
   window.ptComprovanteAbrir = function (o) {
     var m = document.getElementById('modal-comp');
     if (!m) {

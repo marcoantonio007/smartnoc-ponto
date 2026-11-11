@@ -590,7 +590,8 @@ case 'ponto_dia_historico': { // histórico do colaborador: cada solicitação/d
     $nome = exigeColab($pdo); $data = $_GET['data'] ?? '';
     if (!ptDataValida($data) || $data > date('Y-m-d')) erro('Data inválida.');
     $gv = trim((string)($_GET['alvo'] ?? '')) !== ''; // gestor na Apuração: vê também IP, aparelho, local e distância facial
-    $st = $pdo->prepare("SELECT id, evento, tipo, to_char(momento,'YYYY-MM-DD HH24:MI:SS') AS momento, usuario,
+    $st = $pdo->prepare("SELECT id, evento, tipo, to_char(momento,'YYYY-MM-DD HH24:MI:SS') AS momento, usuario, batida_id, -- COMPROVANTE_V2
+                                COALESCE((SELECT b.status IN ('valida','aprovada') FROM ponto_batidas b WHERE b.id = ponto_eventos.batida_id), false) AS comprovante,
                                 " . ($gv ? "detalhes, ip, agente," : "CASE WHEN evento = 'BATIDA_FACIAL' THEN 'Reconhecimento facial' ELSE detalhes END AS detalhes,") . "
                                 to_char(criado_em,'YYYY-MM-DD HH24:MI:SS') AS criado_em
                          FROM ponto_eventos WHERE nome = :n AND data_ref = :d ORDER BY criado_em, id");

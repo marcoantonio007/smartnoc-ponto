@@ -349,9 +349,11 @@
       var loc = localMaps(e.detalhes), det = loc ? e.detalhes.replace(/;\s*local\s+-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?/, '') : e.detalhes;
       if (loc) r += '<div>Local: <a href="https://www.google.com/maps?q=' + loc.lat + ',' + loc.lng + '" target="_blank" rel="noopener" title="Abrir no Google Maps" style="font-weight:700;color:#60a5fa;text-decoration:none">📍 Ver no mapa</a></div>';
       if (det) r += '<div>' + (/SOLICITADA$/.test(e.evento) ? 'Justificativa' : /(RECUSADA|APROVADA)$/.test(e.evento) ? 'Motivo' : 'Detalhes') + ': <b>' + esc(det) + '</b></div>';
+      if (e.batida_id && (e.comprovante === true || e.comprovante === 't')) r += '<div data-hcomp="' + e.batida_id + '" style="margin-top:8px"></div>'; // COMPROVANTE_V2
       return r + '</div>';
     }).join('') : '<div class="mudo" style="font-size:13px">Nenhum registro.</div>';
     $('hist-corpo').innerHTML = h;
+    if (window.ptComprovanteBotoes) Array.prototype.forEach.call($('hist-corpo').querySelectorAll('[data-hcomp]'), function (cx) { ptComprovanteBotoes(cx, { id: +cx.getAttribute('data-hcomp'), alvo: (MODO && est.colab) ? est.colab : '', compacto: true }); });
   }
   $('hist-fechar').onclick = function () { $('modal-hist').classList.add('hidden'); };
 

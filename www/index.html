@@ -590,8 +590,7 @@
     else { btn.disabled = true; btn.textContent = '✔ Dia completo'; }
     $('btn-extra-hoje').classList.toggle('hidden', !(!h.fds && extraProx(h)));
     var ah = $('home-alerta-hoje');
-    if (h.alerta) { ah.classList.remove('hidden'); ah.innerHTML = esc(h.alerta) + ' <button data-corrigir="' + h.data + '">Lançar manualmente</button>'; }
-    else ah.classList.add('hidden');
+    ah.classList.add('hidden'); // HOME_SEM_ALERTAS_V1: a tela inicial mostra só as batidas do dia; pendências ficam em Minha folha
 
     var linhas = (h.fds ? ['ENTRADA', 'SAIDA'] : TIPOS).concat(['EXTRA_ENTRADA', 'EXTRA_SAIDA'].filter(function (t) { return h.batidas.some(function (b) { return b.tipo === t; }); })).map(function (t) {
       var ativa = h.batidas.filter(function (b) { return b.tipo === t && ['valida', 'pendente', 'aprovada'].indexOf(b.status) >= 0; })[0];
@@ -604,7 +603,7 @@
     $('lista-hoje').innerHTML = linhas;
 
     var al = j.alertas.filter(function (a) { return a.data !== h.data; });
-    $('bloco-alertas').classList.toggle('hidden', !al.length);
+    $('bloco-alertas').classList.add('hidden'); // HOME_SEM_ALERTAS_V1
     $('lista-alertas').innerHTML = al.map(function (a) {
       return '<div class="item-alerta"><b>' + DIAS[a.dow] + ', ' + dataBR(a.data) + '</b><div class="d">' + esc(a.alerta) + '</div>' +
         '<button class="link" style="color:#9fc0f5" data-corrigir="' + a.data + '">Corrigir e justificar</button></div>';

@@ -342,11 +342,10 @@
     if (!j.sucesso) throw new Error(j.erro);
     var link = location.origin + '/';
     c.innerHTML = '<div class="mb-3 p-3 rounded bg-blue-50 border border-blue-200 text-xs text-slate-700">Link para os colaboradores baterem o ponto (abrir no celular): <b class="select-all">' + esc(link) + '</b>' +
-      '<div class="mt-1 text-slate-500">O login é o mesmo da escala. Quem não tem usuário precisa ser cadastrado na escala (Configurações → Usuários), com o <b>nome completo igual ao do cadastro do colaborador</b>. No primeiro acesso a pessoa cadastra o rosto.</div></div>' +
-      '<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-2 py-2">Colaborador</th><th class="text-left px-2 py-2">Setor</th><th class="text-left px-2 py-2">E-mail</th><th class="px-2 py-2">Login</th><th class="px-2 py-2">Rosto</th><th class="px-2 py-2">Regra</th><th class="px-2 py-2">Situação</th><th></th></tr></thead><tbody class="divide-y">' +
+      '<div class="mt-1 text-slate-500">O login é o mesmo da escala. Quem não tem usuário precisa ser cadastrado na escala (Configurações → Usuários), com o <b>nome completo igual ao do cadastro do colaborador</b>. No primeiro acesso a pessoa cadastra o rosto. O <b>e-mail</b> do colaborador é cadastrado na escala (Configurações → Colaboradores).</div></div>' +
+      '<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-2 py-2">Colaborador</th><th class="text-left px-2 py-2">Setor</th><th class="px-2 py-2">Login</th><th class="px-2 py-2">Rosto</th><th class="px-2 py-2">Regra</th><th class="px-2 py-2">Situação</th><th></th></tr></thead><tbody class="divide-y">' +
       j.itens.map(function (i) {
         return '<tr><td class="px-2 py-2 font-bold uppercase">' + esc(i.nome) + '</td><td class="px-2 py-2 text-slate-500">' + esc(i.setor || '') + '</td>' +
-          '<td class="px-2 py-1"><input type="email" data-email="' + esc(i.nome) + '" value="' + esc(i.email || '') + '" placeholder="e-mail do colaborador" maxlength="200" class="text-xs w-48 border rounded px-2 py-1"></td>' +
           '<td class="px-2 py-2 text-center">' + (i.tem_login ? '<span class="font-mono">' + esc(i.usuario) + '</span>' : '<span class="text-amber-600 font-bold">sem login</span>') + '</td>' +
           '<td class="px-2 py-2 text-center">' + (i.cadastrado ? '✔' : '—') + '</td><td class="px-2 py-2 text-center">' + (i.regra_individual ? '<span class="text-amber-600 font-bold">Individual</span>' : '<span class="text-slate-500">Padrão</span>') + '</td><td class="px-2 py-2 text-center">' + (i.ativo ? 'Ativo' : '<span class="text-red-600 font-bold">Desativado</span>') + '</td>' +
           '<td class="px-2 py-2 text-right whitespace-nowrap"><button data-a="regra" data-n="' + esc(i.nome) + '" class="px-2 py-1 rounded border font-bold mr-1">Regra</button>' + (i.cadastrado ? '<button data-a="rosto" data-n="' + esc(i.nome) + '" class="px-2 py-1 rounded bg-slate-600 text-white font-bold mr-1">Resetar rosto</button>' : '') +
@@ -524,3 +523,4 @@
     } catch (e) { toast(e.message, 'error'); }
   })();
 })();
+/* EMAIL_NA_ESCALA_V1: o e-mail do colaborador é cadastrado na Escala (Configurações → Colaboradores) */
